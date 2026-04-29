@@ -187,6 +187,7 @@
   .filter-chip[data-filter="radius"]    { width: 156px; }
   .filter-chip[data-filter="abundance"] { width: 184px; }
   .filter-chip[data-filter="state"]     { width: 184px; }
+  .filter-chip[data-filter="stardust"]  { width: 184px; }
   .filter-chip-reset                    { width: 96px; }
 
   .filter-chip .chip-text {
@@ -482,6 +483,28 @@
   .toggle-chip[data-flag="radioactive"].active {
     background: var(--edwin-red);
     border-color: var(--edwin-red);
+  }
+
+  /* Stardust origin chips — each gets its own cosmic colour when active */
+  .toggle-chip[data-stardust="bigbang"].active {
+    background: #F59E0B;
+    border-color: #F59E0B;
+  }
+  .toggle-chip[data-stardust="fusion"].active {
+    background: #FB923C;
+    border-color: #FB923C;
+  }
+  .toggle-chip[data-stardust="supernova"].active {
+    background: var(--edwin-red);
+    border-color: var(--edwin-red);
+  }
+  .toggle-chip[data-stardust="neutron"].active {
+    background: var(--edwin-purple);
+    border-color: var(--edwin-purple);
+  }
+  .toggle-chip[data-stardust="synthetic"].active {
+    background: var(--ink-soft);
+    border-color: var(--ink-soft);
   }
 
   /* ================================================================
@@ -1121,6 +1144,10 @@
       <span class="chip-icon">❄</span>
       <span class="chip-text" id="chip-text-state">State &amp; Type</span>
     </button>
+    <button class="filter-chip" data-filter="stardust">
+      <span class="chip-icon">✨</span>
+      <span class="chip-text" id="chip-text-stardust">Stardust</span>
+    </button>
     <button class="filter-chip filter-chip-reset" id="resetAllBtn" disabled>
       <span class="chip-icon">↺</span>
       <span class="chip-text">Reset</span>
@@ -1408,6 +1435,60 @@ const ELEMENT_EXTRA = {
   118: [157,  null,    'synthetic', true]
 };
 
+// Cosmic origin per element — based on the Jennifer Johnson "Origin of the
+// Solar System Elements" chart, simplified into five buckets. The dominant
+// nucleosynthetic source is chosen for each element.
+//   bigbang   = primordial Big Bang nucleosynthesis (H, He, Li)
+//   fusion    = stellar fusion / cosmic-ray spallation / s-process in dying stars
+//   supernova = exploding massive stars (core-collapse + Type Ia)
+//   neutron   = r-process from merging neutron stars
+//   synthetic = no stable isotopes; effectively all human-made
+const STARDUST_ORIGIN = {
+  1:'bigbang',  2:'bigbang',  3:'bigbang',
+  4:'fusion',   5:'fusion',   6:'fusion',   7:'fusion',
+  8:'supernova',9:'fusion',
+  10:'supernova',11:'supernova',12:'supernova',13:'supernova',14:'supernova',
+  15:'supernova',16:'supernova',17:'supernova',18:'supernova',19:'supernova',
+  20:'supernova',21:'supernova',22:'supernova',23:'supernova',24:'supernova',
+  25:'supernova',26:'supernova',27:'supernova',28:'supernova',29:'supernova',
+  30:'supernova',31:'supernova',32:'supernova',33:'supernova',34:'supernova',
+  35:'supernova',36:'supernova',37:'supernova',
+  38:'fusion',39:'fusion',40:'fusion',41:'fusion',42:'fusion',
+  43:'synthetic',
+  44:'fusion',
+  45:'neutron',
+  46:'fusion',
+  47:'neutron',
+  48:'fusion',49:'fusion',50:'fusion',
+  51:'neutron',52:'neutron',53:'neutron',54:'neutron',
+  55:'fusion',56:'fusion',
+  57:'neutron',58:'fusion',59:'neutron',60:'fusion',
+  61:'synthetic',
+  62:'neutron',63:'neutron',64:'neutron',65:'neutron',66:'neutron',
+  67:'neutron',68:'neutron',69:'neutron',
+  70:'fusion',
+  71:'neutron',
+  72:'fusion',73:'fusion',74:'fusion',
+  75:'neutron',76:'neutron',77:'neutron',78:'neutron',79:'neutron',
+  80:'fusion',81:'fusion',82:'fusion',83:'fusion',
+  84:'neutron',85:'neutron',86:'neutron',87:'neutron',88:'neutron',
+  89:'neutron',90:'neutron',91:'neutron',92:'neutron',
+  93:'synthetic',94:'synthetic',95:'synthetic',96:'synthetic',97:'synthetic',
+  98:'synthetic',99:'synthetic',100:'synthetic',101:'synthetic',102:'synthetic',
+  103:'synthetic',104:'synthetic',105:'synthetic',106:'synthetic',107:'synthetic',
+  108:'synthetic',109:'synthetic',110:'synthetic',111:'synthetic',112:'synthetic',
+  113:'synthetic',114:'synthetic',115:'synthetic',116:'synthetic',117:'synthetic',
+  118:'synthetic'
+};
+
+const STARDUST_LABEL = {
+  bigbang: 'Big Bang',
+  fusion: 'Fusion',
+  supernova: 'Supernova',
+  neutron: 'Neutron Star',
+  synthetic: 'Synthetic'
+};
+
 // Build the layout grid
 function buildTable() {
   const table = document.getElementById('table');
@@ -1539,7 +1620,8 @@ const sliderState = {
 };
 const toggleState = {
   states: new Set(),       // active state-at-RT chips
-  radioactive: false       // radioactive-only flag
+  radioactive: false,      // radioactive-only flag
+  stardust: new Set()      // active cosmic-origin chips
 };
 
 // Compute data ranges for slider mapping
@@ -1727,6 +1809,17 @@ function updateChipLabels() {
     stateChip.classList.remove('has-filter');
   }
 
+  // Stardust chip — summarises any active cosmic-origin toggles
+  const stardustChip = document.querySelector('[data-filter="stardust"]');
+  const stardustText = document.getElementById('chip-text-stardust');
+  if (toggleState.stardust.size > 0) {
+    const labels = Array.from(toggleState.stardust).map(k => STARDUST_LABEL[k]);
+    stardustText.textContent = labels.join(' · ');
+    stardustChip.classList.add('has-filter');
+  } else {
+    stardustText.textContent = 'Stardust';
+    stardustChip.classList.remove('has-filter');
+  }
 }
 
 // Backwards-compat alias so any old callers still work
@@ -1757,6 +1850,8 @@ function openFilterPanel(key) {
 
   if (key === 'state') {
     renderStateControls();
+  } else if (key === 'stardust') {
+    renderStardustControls();
   } else {
     renderHistogram(key);
   }
@@ -1940,6 +2035,41 @@ function renderStateControls() {
   });
 }
 
+function renderStardustControls() {
+  const gap = document.getElementById('gapControl');
+  const has = (k) => toggleState.stardust.has(k);
+
+  gap.innerHTML = `
+    <div class="gap-control-header">
+      <span class="gap-control-icon">✨</span>
+      <span class="gap-control-label">Stardust — Cosmic Origin</span>
+    </div>
+    <div class="state-controls">
+      <button class="toggle-chip ${has('bigbang') ? 'active' : ''}" data-stardust="bigbang">Big Bang</button>
+      <button class="toggle-chip ${has('fusion') ? 'active' : ''}" data-stardust="fusion">Fusion</button>
+      <button class="toggle-chip ${has('supernova') ? 'active' : ''}" data-stardust="supernova">Supernova</button>
+      <button class="toggle-chip ${has('neutron') ? 'active' : ''}" data-stardust="neutron">Neutron Star</button>
+      <button class="toggle-chip ${has('synthetic') ? 'active' : ''}" data-stardust="synthetic">Synthetic</button>
+    </div>
+    <div class="gap-control-explainer">Filter by where each element was forged. H and He are leftover from the Big Bang; lighter atoms form by stellar fusion; iron and its neighbours come from supernovae; gold, platinum, and uranium are born in neutron-star mergers; everything past plutonium is human-made.</div>
+  `;
+
+  gap.querySelectorAll('.toggle-chip[data-stardust]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const k = chip.dataset.stardust;
+      if (toggleState.stardust.has(k)) {
+        toggleState.stardust.delete(k);
+        chip.classList.remove('active');
+      } else {
+        toggleState.stardust.add(k);
+        chip.classList.add('active');
+      }
+      updateChipLabels();
+      applyFilters();
+    });
+  });
+}
+
 function isAnyFilterActive() {
   return activeFilter !== null
     || document.getElementById('search').value.trim() !== ''
@@ -1948,7 +2078,8 @@ function isAnyFilterActive() {
     || sliderState.radius < 100
     || sliderState.abundance < 100
     || toggleState.states.size > 0
-    || toggleState.radioactive;
+    || toggleState.radioactive
+    || toggleState.stardust.size > 0;
 }
 
 function applyFilters() {
@@ -2022,6 +2153,12 @@ function applyFilters() {
     // Toggle: radioactive only
     if (toggleState.radioactive && !radioactive) matches = false;
 
+    // Toggle: cosmic origin (Stardust)
+    if (toggleState.stardust.size > 0) {
+      const origin = STARDUST_ORIGIN[num];
+      if (!origin || !toggleState.stardust.has(origin)) matches = false;
+    }
+
     // Apply visual: 'faded' class for slider-based filtering (greyscale + translucent),
     // 'dimmed' for category/search (opacity-based)
     el.classList.toggle('faded', !matches);
@@ -2042,6 +2179,7 @@ function resetAllFilters() {
   // Reset toggles
   toggleState.states.clear();
   toggleState.radioactive = false;
+  toggleState.stardust.clear();
 
   // Reset category & search
   activeFilter = null;
@@ -2051,12 +2189,14 @@ function resetAllFilters() {
   applyFilters();
 
   // If a histogram is open, refresh its bars to reflect reset
-  if (histoState.activeFilter && histoState.activeFilter !== 'state') {
+  if (histoState.activeFilter === 'state') {
+    renderStateControls();
+  } else if (histoState.activeFilter === 'stardust') {
+    renderStardustControls();
+  } else if (histoState.activeFilter) {
     paintBars(histoState.activeFilter);
     const thumb = document.getElementById('histoThumb');
     if (thumb) thumb.style.left = '100%';
-  } else if (histoState.activeFilter === 'state') {
-    renderStateControls();
   }
 }
 
