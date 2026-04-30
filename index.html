@@ -776,6 +776,60 @@
     transform: translateX(-50%) scale(1.05);
   }
 
+  /* Mile markers — small numeric tick labels below the chart at 0/25/50/75/100%
+     of the slider range. Existing every histogram so users know exactly what
+     real-world value sits at each position. Absolutely positioned so each
+     label can center on its tick (with edge alignment for 0% and 100% so the
+     end labels don't fall off the chart). */
+  .histo-markers {
+    position: relative;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .histo-marker {
+    position: absolute;
+    top: 0;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  /* Edge alignment so the end labels stay inside the chart bounds */
+  .histo-marker[data-pos="0"]   { left: 0; }
+  .histo-marker[data-pos="100"] { right: 0; }
+  /* Middle markers center on their position via JS-set left + transform */
+
+  /* Unit suffix on the rightmost marker — lighter and slightly smaller
+     than the numeric value, so the unit reads as a label rather than
+     more data. Convention: number labels run along the axis, unit shows
+     once at the end. */
+  .histo-marker-unit {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-left: 1px;
+  }
+
+  /* Tiny tick mark above each label connecting visually to the chart */
+  .histo-marker::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: 1px;
+    height: 3px;
+    background: var(--rule-strong);
+    margin-bottom: 1px;
+    transform: translateX(-50%);
+  }
+  .histo-marker[data-pos="0"]::before   { left: 0;   transform: none; }
+  .histo-marker[data-pos="100"]::before { left: auto; right: 0; transform: none; }
+
   /* Always-visible explainer text below the slider/buttons */
   .gap-control-explainer {
     font-size: 11px;
@@ -787,8 +841,7 @@
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    margin-top: 4px;
-  }
+    margin-top: 4px;  }
 
   /* State filter inline controls (for the State chip) — fit in narrow gap */
   .state-controls {
@@ -2061,7 +2114,7 @@
   <header>
     <h1>The Periodic Table</h1>
     <div class="eyebrow">Interactive Reference</div>
-    <p class="subtitle">Click any element to learn more and view its atomic structure in 3D.</p>
+    <p class="subtitle">Explore all 118 known elements. Click any element to learn more, view its atomic structure, and (for Hydrogen, Carbon, and Oxygen) see the orbital model in 3D.</p>
   </header>
 
   <div class="filter-rail">
@@ -2737,11 +2790,18 @@ const histoState = {
 };
 
 // Slider/toggle filter state
+// Each slider is a two-handle range: lo and hi positions on a 0-100 scale.
+// Default {lo: 0, hi: 100} = full range, no filter applied.
+// Filter is "active" when lo > 0 OR hi < 100. Year/density/radius use
+// pos directly as a value-domain mapping (0 = lowest data value, 100 = highest).
+// Abundance is on a log scale where pos 0 = most abundant and pos 100 = rarest;
+// dragging the lo handle right excludes the most-abundant elements, dragging hi
+// left excludes the rarest. Same range-filter semantics applies uniformly.
 const sliderState = {
-  year: 100,        // 0-100, default 100 (today, no filter)
-  density: 100,     // 0-100, default 100 (max, no filter)
-  radius: 100,      // 0-100, default 100 (max, no filter)
-  abundance: 100    // 0-100 LOG scale, default 100 (right = include all)
+  year:      { lo: 0, hi: 100 },
+  density:   { lo: 0, hi: 100 },
+  radius:    { lo: 0, hi: 100 },
+  abundance: { lo: 0, hi: 100 }
 };
 const toggleState = {
   states: new Set(),       // active phase chips: solid, liquid, gas (mutually exclusive — radio behaviour)
@@ -2825,6 +2885,19 @@ function getAbundanceThreshold(pos) {
   return Math.pow(10, logVal);
 }
 
+// Compute the real-value [min, max] range for a two-handle slider, or null
+// if the slider is at full extent (lo=0, hi=100) and not actively filtering.
+// Each filter's getThreshold function maps slider pos to a real value;
+// taking min/max of the two endpoint values handles slider polarity uniformly
+// (year/density/radius are pos↑value↑; abundance is pos↑value↓).
+function sliderRangeFor(key) {
+  const { lo, hi } = sliderState[key];
+  if (lo === 0 && hi === 100) return null;
+  const valLo = FILTER_CONFIG[key].getThreshold(lo);
+  const valHi = FILTER_CONFIG[key].getThreshold(hi);
+  return { min: Math.min(valLo, valHi), max: Math.max(valLo, valHi) };
+}
+
 function formatYearReadout(year) {
   if (year < 0) return `c. ${Math.abs(Math.round(year))} BCE`;
   return `${Math.round(year)}`;
@@ -2845,77 +2918,85 @@ const FILTER_CONFIG = {
   year: {
     label: 'Year of Discovery',
     icon: '📅',
-    tip: 'Drag the handle to fade in only elements known before that year. Reveals how chemistry unfolded — most of the table came after 1800.',
+    tip: 'Drag the handles to narrow the timeline. Most of the table was discovered between 1750 and 1950 — chemistry\'s golden century.',
     getThreshold: (pos) => getYearThreshold(pos),
     activeText: (t) => `Before ${formatYearReadout(t)}`
   },
   density: {
     label: 'Density',
     icon: '⚖',
-    tip: 'Drag left to keep only lighter elements. The densest elements (osmium, iridium, platinum) cluster in one corner of the table.',
+    tip: 'Drag the handles to isolate a density range. The densest elements (osmium, iridium, platinum) cluster in one corner of the table.',
     getThreshold: (pos) => getDensityThreshold(pos),
     activeText: (t) => `≤ ${t.toFixed(2)} g/cm³`
   },
   radius: {
     label: 'Atomic Radius',
     icon: '⌖',
-    tip: 'Drag left to keep only smaller atoms. Atoms shrink across a period and grow down a group — the slider draws this trend visually.',
+    tip: 'Drag the handles to isolate an atomic-radius range. Atoms shrink across a period and grow down a group — narrow the window to see this trend.',
     getThreshold: (pos) => getRadiusThreshold(pos),
     activeText: (t) => `≤ ${Math.round(t)} pm`
   },
   abundance: {
     label: "Earth's Crust Abundance",
     icon: '🌍',
-    tip: 'Drag left to keep only the most abundant elements. Oxygen and silicon dominate; gold and platinum are vanishingly rare. Uses a log scale.',
+    tip: 'Drag the handles to isolate an abundance range. Oxygen and silicon dominate the crust; gold and platinum are vanishingly rare. Uses a log scale.',
     getThreshold: (pos) => getAbundanceThreshold(pos),
     activeText: (t) => `≥ ${formatAbundance(t)}`
   }
 };
 
+// Format a range chip label. Renders the per-filter chip text based on the
+// current lo/hi range, with one of four states:
+//   { lo: 0,  hi: 100 } → null (chip falls back to default name, inactive)
+//   { lo: 0,  hi: <100 } → "≤ valHi"
+//   { lo: >0, hi: 100 } → "≥ valLo"
+//   { lo: >0, hi: <100 } → "valLo – valHi"
+function formatRangeLabel(key) {
+  const { lo, hi } = sliderState[key];
+  if (lo === 0 && hi === 100) return null;
+
+  // Pull the lo/hi real values, then sort min..max (handles polarity).
+  const valLo = FILTER_CONFIG[key].getThreshold(lo);
+  const valHi = FILTER_CONFIG[key].getThreshold(hi);
+  const minVal = Math.min(valLo, valHi);
+  const maxVal = Math.max(valLo, valHi);
+
+  // Per-filter compact value formatters for chip labels (separate from
+  // mile-marker formatters because chip space is even tighter and units
+  // matter for clarity).
+  const fmt = {
+    year:      v => v < 0 ? `${Math.abs(Math.round(v))} BCE` : `${Math.round(v)}`,
+    density:   v => `${v.toFixed(1)}`,
+    radius:    v => `${Math.round(v)}`,
+    abundance: v => formatAbundance(v)
+  }[key];
+  const unit = { year: '', density: ' g/cm³', radius: ' pm', abundance: '' }[key];
+
+  if (lo === 0)   return `≤ ${fmt(maxVal)}${unit}`;
+  if (hi === 100) return `≥ ${fmt(minVal)}${unit}`;
+  return `${fmt(minVal)} – ${fmt(maxVal)}${unit}`;
+}
+
 function updateChipLabels() {
-  // Year
-  const yearChip = document.querySelector('[data-filter="year"]');
-  const yearText = document.getElementById('chip-text-year');
-  if (sliderState.year < 100) {
-    yearText.textContent = FILTER_CONFIG.year.activeText(getYearThreshold(sliderState.year));
-    yearChip.classList.add('has-filter');
-  } else {
-    yearText.textContent = 'Year of Discovery';
-    yearChip.classList.remove('has-filter');
-  }
+  // Helper to set a slider chip's text + has-filter class based on its range.
+  const setSliderChip = (key, defaultText) => {
+    const chip = document.querySelector(`[data-filter="${key}"]`);
+    const text = document.getElementById(`chip-text-${key}`);
+    if (!chip || !text) return;
+    const rangeLabel = formatRangeLabel(key);
+    if (rangeLabel) {
+      text.textContent = rangeLabel;
+      chip.classList.add('has-filter');
+    } else {
+      text.textContent = defaultText;
+      chip.classList.remove('has-filter');
+    }
+  };
 
-  // Density
-  const densityChip = document.querySelector('[data-filter="density"]');
-  const densityText = document.getElementById('chip-text-density');
-  if (sliderState.density < 100) {
-    densityText.textContent = FILTER_CONFIG.density.activeText(getDensityThreshold(sliderState.density));
-    densityChip.classList.add('has-filter');
-  } else {
-    densityText.textContent = 'Density';
-    densityChip.classList.remove('has-filter');
-  }
-
-  // Radius
-  const radiusChip = document.querySelector('[data-filter="radius"]');
-  const radiusText = document.getElementById('chip-text-radius');
-  if (sliderState.radius < 100) {
-    radiusText.textContent = FILTER_CONFIG.radius.activeText(getRadiusThreshold(sliderState.radius));
-    radiusChip.classList.add('has-filter');
-  } else {
-    radiusText.textContent = 'Atomic Radius';
-    radiusChip.classList.remove('has-filter');
-  }
-
-  // Abundance
-  const abundanceChip = document.querySelector('[data-filter="abundance"]');
-  const abundanceText = document.getElementById('chip-text-abundance');
-  if (sliderState.abundance < 100) {
-    abundanceText.textContent = FILTER_CONFIG.abundance.activeText(getAbundanceThreshold(sliderState.abundance));
-    abundanceChip.classList.add('has-filter');
-  } else {
-    abundanceText.textContent = 'Crust Abundance';
-    abundanceChip.classList.remove('has-filter');
-  }
+  setSliderChip('year',      'Year of Discovery');
+  setSliderChip('density',   'Density');
+  setSliderChip('radius',    'Atomic Radius');
+  setSliderChip('abundance', 'Crust Abundance');
 
   // State chip — summarises any active phase / synthetic / radioactive toggles
   const stateChip = document.querySelector('[data-filter="state"]');
@@ -3036,6 +3117,51 @@ function positionGapControl() {
   }
 }
 
+// Format a single mile-marker label for a given filter at a given slider %.
+// Each filter has its own number-formatting needs: years are integers (with
+// BCE suffix for negative), density wants smart precision, radius is plain
+// integers + pm unit (skipped to keep labels short), abundance is log-scale
+// and uses scientific notation in compact form.
+//
+// The 100% marker (rightmost) gets the unit appended — convention from
+// compact chart design: numbers labelled along the axis, unit shown once
+// at the end. Year stays unit-less since "2026 AD" reads worse than "2026".
+function formatMarkerLabel(key, pos) {
+  const value = FILTER_CONFIG[key].getThreshold(pos);
+  const isLast = pos === 100;
+  const unit = { density: 'g/cm³', radius: 'pm', abundance: 'mg/kg' }[key] || '';
+  const withUnit = (numStr) => isLast && unit
+    ? `${numStr} <span class="histo-marker-unit">${unit}</span>`
+    : numStr;
+
+  if (key === 'year') {
+    const yr = Math.round(value);
+    return yr < 0 ? `${Math.abs(yr)} BCE` : `${yr}`;
+  }
+  if (key === 'density') {
+    // Range spans ~0.00009 (hydrogen gas) to ~22.6 (osmium). For mile-marker
+    // labels, very-near-zero values are friendlier as "~0" than "9e-5";
+    // otherwise show 1-2 decimals depending on magnitude.
+    if (value < 0.05) return withUnit('~0');
+    if (value < 1) return withUnit(value.toFixed(2));
+    return withUnit(value.toFixed(1));
+  }
+  if (key === 'radius') {
+    return withUnit(`${Math.round(value)}`);
+  }
+  if (key === 'abundance') {
+    // Log scale spans many orders of magnitude — power-of-10 notation is
+    // most honest. e.g. value 0.001 → "10⁻³", value 100 → "10²".
+    if (value <= 0) return '';
+    const exp = Math.round(Math.log10(value));
+    // Render small integers in superscript using Unicode where available
+    const supers = { '-': '⁻', '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹' };
+    const expStr = String(exp).split('').map(c => supers[c] || c).join('');
+    return withUnit(`10${expStr}`);
+  }
+  return '';
+}
+
 function renderHistogram(key) {
   const config = FILTER_CONFIG[key];
   const gap = document.getElementById('gapControl');
@@ -3056,8 +3182,11 @@ function renderHistogram(key) {
     if (pos !== null) positions.push(pos);
   });
 
-  // Compact bin count for the small in-table region
-  const binCount = 18;
+  // Compact bin count for the small in-table region. Doubled from 18 to 36
+  // for finer dragging feedback — with two-handle range filtering, users
+  // make smaller adjustments and need to see bars toggle in/out at higher
+  // resolution. Each bar is now ~10-11px wide on a typical chart.
+  const binCount = 36;
   const bins = new Array(binCount).fill(0);
   positions.forEach(pos => {
     const idx = Math.min(binCount - 1, Math.floor(pos / 100 * binCount));
@@ -3065,7 +3194,24 @@ function renderHistogram(key) {
   });
   const maxBin = Math.max(...bins, 1);
 
-  // Build compact chart DOM — chip rail handles labelling and closing
+  // Mile markers at 0/25/50/75/100% of the slider — each shows the real
+  // value at that position. Useful for the two-handle range model where
+  // users care about absolute values, not just abstract slider positions.
+  const markerPositions = [0, 25, 50, 75, 100];
+  const markersHtml = markerPositions.map(p => {
+    const label = formatMarkerLabel(key, p);
+    // Edge markers (0 and 100) align flush; middle markers center on their position
+    const styleAttr = (p === 0 || p === 100) ? '' : ` style="left: ${p}%; transform: translateX(-50%);"`;
+    return `<span class="histo-marker" data-pos="${p}"${styleAttr}>${label}</span>`;
+  }).join('');
+
+  const { lo, hi } = sliderState[key];
+
+  // Build compact chart DOM. Two thumbs (lo + hi) + markers row below
+  // the chart. Drag layer covers the chart area but routes pointer events
+  // to whichever thumb is closer to the click. The opacity drop on
+  // excluded bars (via paintBars) is the sole signal of which range is
+  // selected — no separate fill bar needed.
   gap.innerHTML = `
     <div class="gap-control-header">
       <span class="gap-control-icon">${config.icon}</span>
@@ -3074,8 +3220,10 @@ function renderHistogram(key) {
     <div class="histo-chart" id="histoChart">
       <div class="histo-bars" id="histoBars"></div>
       <div class="histo-drag" id="histoDrag"></div>
-      <div class="histo-thumb" id="histoThumb" style="left: ${sliderState[key]}%"></div>
+      <div class="histo-thumb histo-thumb-lo" data-handle="lo" style="left: ${lo}%"></div>
+      <div class="histo-thumb histo-thumb-hi" data-handle="hi" style="left: ${hi}%"></div>
     </div>
+    <div class="histo-markers">${markersHtml}</div>
     <div class="gap-control-explainer">${config.tip}</div>
   `;
 
@@ -3119,12 +3267,19 @@ function valueToSliderPos(key, value) {
 }
 
 function paintBars(key) {
-  const pos = sliderState[key];
+  // Two-handle range model: a bar is "in range" if its bin center sits
+  // between the lo and hi thumbs (inclusive). Class names below-threshold
+  // and above-threshold are kept for backwards compatibility with the
+  // existing per-filter palette CSS — they now mean "included" and
+  // "excluded" rather than the old single-threshold semantics. The
+  // opacity drop on excluded bars is the user's sole visual cue for
+  // which range is selected (deliberately minimalist — no extra fill bar).
+  const { lo, hi } = sliderState[key];
   const bars = document.querySelectorAll('#histoBars .histo-bar');
   const binCount = bars.length;
   bars.forEach((bar, idx) => {
     const binCenter = ((idx + 0.5) / binCount) * 100;
-    const included = binCenter <= pos;
+    const included = binCenter >= lo && binCenter <= hi;
     bar.classList.toggle('below-threshold', included);
     bar.classList.toggle('above-threshold', !included);
   });
@@ -3133,35 +3288,73 @@ function paintBars(key) {
 function attachHistoDrag(key) {
   const chart = document.getElementById('histoChart');
   const drag = document.getElementById('histoDrag');
-  const thumb = document.getElementById('histoThumb');
-  let isDragging = false;
+  const thumbLo = chart.querySelector('.histo-thumb-lo');
+  const thumbHi = chart.querySelector('.histo-thumb-hi');
+  // Minimum gap between thumbs (in slider %) so they stay visually distinct
+  // and the user can always grab them apart again after collapsing them.
+  const MIN_GAP = 1;
 
-  // The drag hit zone (`.histo-drag`) is intentionally wider than the chart
-  // so the thumb circle is fully grabbable at both ends. But the thumb's
-  // `left: %` is positioned against the chart, and 0% / 100% must hit the
-  // chart's edges — so we measure against the chart's rect, not the drag's.
-  function setFromX(clientX) {
+  // Which thumb is currently being dragged ('lo' | 'hi' | null). Set on
+  // pointerdown by picking whichever thumb is closer to the click.
+  let activeHandle = null;
+
+  // Convert pointer X to a 0-100 slider position relative to the chart rect.
+  // The drag layer is wider than the chart (hit-zone extension trick), but
+  // 0% and 100% should still align with the chart's actual edges, so we
+  // measure against the chart, not the drag layer.
+  function clientXToPos(clientX) {
     const rect = chart.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-    const pos = Math.round((x / rect.width) * 100);
-    sliderState[key] = pos;
-    thumb.style.left = `${pos}%`;
+    return Math.round((x / rect.width) * 100);
+  }
+
+  // Apply a new position to whichever handle is active, with cross-over
+  // prevention. Updates state, repaints, and re-runs filters.
+  function setHandlePos(handle, pos) {
+    const state = sliderState[key];
+    if (handle === 'lo') {
+      // lo can move from 0 up to (hi - MIN_GAP)
+      const max = state.hi - MIN_GAP;
+      state.lo = Math.max(0, Math.min(max, pos));
+      thumbLo.style.left = `${state.lo}%`;
+    } else {
+      // hi can move from (lo + MIN_GAP) up to 100
+      const min = state.lo + MIN_GAP;
+      state.hi = Math.min(100, Math.max(min, pos));
+      thumbHi.style.left = `${state.hi}%`;
+    }
     paintBars(key);
     updateChipLabels();
     applyFilters();
   }
 
   drag.addEventListener('pointerdown', (e) => {
-    isDragging = true;
+    const pos = clientXToPos(e.clientX);
+    const { lo, hi } = sliderState[key];
+    // Pick whichever thumb is closer to the click. Ties go to lo (arbitrary
+    // but consistent). When both thumbs are at the same position, prefer
+    // the one whose direction the click came from — clicking left of the
+    // pair grabs lo, clicking right grabs hi.
+    let handle;
+    if (lo === hi) {
+      handle = pos < lo ? 'lo' : 'hi';
+    } else {
+      handle = Math.abs(pos - lo) <= Math.abs(pos - hi) ? 'lo' : 'hi';
+    }
+    activeHandle = handle;
     drag.setPointerCapture(e.pointerId);
-    setFromX(e.clientX);
+    setHandlePos(handle, pos);
   });
   drag.addEventListener('pointermove', (e) => {
-    if (isDragging) setFromX(e.clientX);
+    if (!activeHandle) return;
+    setHandlePos(activeHandle, clientXToPos(e.clientX));
   });
   drag.addEventListener('pointerup', (e) => {
-    isDragging = false;
+    activeHandle = null;
     drag.releasePointerCapture(e.pointerId);
+  });
+  drag.addEventListener('pointercancel', () => {
+    activeHandle = null;
   });
 }
 
@@ -3335,12 +3528,18 @@ function renderStardustControls() {
 }
 
 function isAnyFilterActive() {
+  // A two-handle slider is active when its lo or hi has moved off either
+  // extreme — i.e., the range is narrower than [0, 100].
+  const sliderActive = key => {
+    const s = sliderState[key];
+    return s.lo > 0 || s.hi < 100;
+  };
   return activeFilter !== null
     || document.getElementById('search').value.trim() !== ''
-    || sliderState.year < 100
-    || sliderState.density < 100
-    || sliderState.radius < 100
-    || sliderState.abundance < 100
+    || sliderActive('year')
+    || sliderActive('density')
+    || sliderActive('radius')
+    || sliderActive('abundance')
     || toggleState.states.size > 0
     || toggleState.synthetic
     || toggleState.radioactive
@@ -3359,11 +3558,18 @@ function applyFilters() {
     }
   });
 
-  // Compute thresholds once per call
-  const yearThreshold = sliderState.year < 100 ? getYearThreshold(sliderState.year) : null;
-  const densityThreshold = sliderState.density < 100 ? getDensityThreshold(sliderState.density) : null;
-  const radiusThreshold = sliderState.radius < 100 ? getRadiusThreshold(sliderState.radius) : null;
-  const abundanceThreshold = sliderState.abundance < 100 ? getAbundanceThreshold(sliderState.abundance) : null;
+  // Compute slider ranges once per call. For each two-handle slider, translate
+  // the lo and hi positions to real-world values and take min/max — this works
+  // uniformly across all four sliders regardless of polarity (year/density/
+  // radius increase with position; abundance decreases with position because
+  // it's on a flipped log scale). The slider is "active" — and contributes
+  // a real filter — only when lo > 0 OR hi < 100; otherwise the range covers
+  // the full data span and we skip the clause to also let null-valued
+  // elements through.
+  const yearRange      = sliderRangeFor('year');
+  const densityRange   = sliderRangeFor('density');
+  const radiusRange    = sliderRangeFor('radius');
+  const abundanceRange = sliderRangeFor('abundance');
 
   // Track how many real elements (excluding placeholders) survive all filters,
   // so we can surface an empty-state message when the combination matches none.
@@ -3396,22 +3602,22 @@ function applyFilters() {
       if (!matchesSearch) matches = false;
     }
 
-    // Slider: year (element must be discovered ≤ threshold)
-    if (yearThreshold !== null && year > yearThreshold) matches = false;
+    // Range slider: year — element's discovery year must fall within range
+    if (yearRange && (year < yearRange.min || year > yearRange.max)) matches = false;
 
-    // Slider: density (element must be ≤ threshold)
-    if (densityThreshold !== null) {
-      if (density === null || isNaN(density) || density > densityThreshold) matches = false;
+    // Range slider: density — null/NaN values are excluded when the filter is active
+    if (densityRange) {
+      if (density === null || isNaN(density) || density < densityRange.min || density > densityRange.max) matches = false;
     }
 
-    // Slider: radius (element must be ≤ threshold)
-    if (radiusThreshold !== null) {
-      if (radius === null || radius > radiusThreshold) matches = false;
+    // Range slider: atomic radius
+    if (radiusRange) {
+      if (radius === null || radius < radiusRange.min || radius > radiusRange.max) matches = false;
     }
 
-    // Slider: abundance (element must be ≥ threshold)
-    if (abundanceThreshold !== null) {
-      if (abundance === null || abundance < abundanceThreshold) matches = false;
+    // Range slider: crustal abundance (log-scale data, but range filter math is the same)
+    if (abundanceRange) {
+      if (abundance === null || abundance < abundanceRange.min || abundance > abundanceRange.max) matches = false;
     }
 
     // Toggle: phase at room temperature (solid / liquid / gas). Synthetic is
@@ -3458,11 +3664,11 @@ function applyFilters() {
 }
 
 function resetAllFilters() {
-  // Reset sliders
-  sliderState.year = 100;
-  sliderState.density = 100;
-  sliderState.radius = 100;
-  sliderState.abundance = 100;
+  // Reset sliders to full range (lo=0, hi=100 = no filter)
+  sliderState.year      = { lo: 0, hi: 100 };
+  sliderState.density   = { lo: 0, hi: 100 };
+  sliderState.radius    = { lo: 0, hi: 100 };
+  sliderState.abundance = { lo: 0, hi: 100 };
 
   // Reset toggles
   toggleState.states.clear();
@@ -3483,9 +3689,15 @@ function resetAllFilters() {
   } else if (histoState.activeFilter === 'stardust') {
     renderStardustControls();
   } else if (histoState.activeFilter) {
-    paintBars(histoState.activeFilter);
-    const thumb = document.getElementById('histoThumb');
-    if (thumb) thumb.style.left = '100%';
+    // For a histogram filter, repainting bars and re-positioning both
+    // thumbs is enough — markers stay valid since the chart axis didn't
+    // change. (A full renderHistogram would also work but causes a flash.)
+    const key = histoState.activeFilter;
+    paintBars(key);
+    const lo = document.querySelector('#histoChart .histo-thumb-lo');
+    const hi = document.querySelector('#histoChart .histo-thumb-hi');
+    if (lo) lo.style.left = '0%';
+    if (hi) hi.style.left = '100%';
   }
 }
 
