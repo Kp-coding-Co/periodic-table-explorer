@@ -2918,14 +2918,14 @@ const FILTER_CONFIG = {
   year: {
     label: 'Year of Discovery',
     icon: '📅',
-    tip: 'Drag the handles to narrow the timeline. Most of the table was discovered between 1750 and 1950 — chemistry\'s golden century.',
+    tip: 'Drag the handles to narrow the timeline. Most of the table was discovered between 1750 and 1950 — chemistry\'s golden era.',
     getThreshold: (pos) => getYearThreshold(pos),
     activeText: (t) => `Before ${formatYearReadout(t)}`
   },
   density: {
     label: 'Density',
     icon: '⚖',
-    tip: 'Drag the handles to isolate a density range. The densest elements (osmium, iridium, platinum) cluster in one corner of the table.',
+    tip: 'Drag the handles to isolate a density range. The densest elements (osmium, iridium, platinum) are clustered together in the middle of the table.',
     getThreshold: (pos) => getDensityThreshold(pos),
     activeText: (t) => `≤ ${t.toFixed(2)} g/cm³`
   },
