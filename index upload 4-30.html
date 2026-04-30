@@ -1,0 +1,4203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Periodic Table of Elements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    /* Edwin core */
+    --edwin-blue: #4A90E2;
+    --edwin-blue-dark: #2E6FBE;
+    --edwin-blue-light: #E8F2FC;
+    --edwin-teal: #1F5F6F;
+    --edwin-teal-light: #5A9AA8;
+    --edwin-red: #D9442D;
+    --edwin-red-light: #F2A893;
+    --edwin-purple: #7B3FF2;
+    --edwin-purple-light: #B89BF7;
+
+    /* Surfaces */
+    --bg: #F5F5F7;
+    --surface: #FFFFFF;
+    --surface-soft: #FAFAFC;
+    --ink: #1F2937;
+    --ink-soft: #6B7280;
+    --ink-muted: #9CA3AF;
+    --rule: #E5E7EB;
+    --rule-strong: #D1D5DB;
+
+    /* Category palette — mapped to Edwin tones */
+    --cat-alkali: #F2A893;             /* warm coral — alkali */
+    --cat-alkaline: #D9442D;           /* Edwin red — alkaline earth */
+    --cat-transition: #2E6FBE;         /* Edwin blue dark — transition */
+    --cat-post-transition: #4A90E2;    /* Edwin blue — post-transition */
+    --cat-metalloid: #5A9AA8;          /* teal-light — metalloids */
+    --cat-nonmetal: #1F5F6F;           /* Edwin teal — nonmetals */
+    --cat-halogen: #F59E0B;            /* warm amber — halogens */
+    --cat-noble: #7B3FF2;              /* Edwin purple — noble gases */
+    --cat-lanthanide: #B89BF7;         /* light purple — lanthanides */
+    --cat-actinide: #5B21B6;           /* deep purple — actinides */
+
+    /* Spacing rhythm — based on 4px grid */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --shadow-sm: 0 1px 2px rgba(31, 41, 55, 0.06), 0 1px 3px rgba(31, 41, 55, 0.08);
+    --shadow-md: 0 4px 8px rgba(31, 41, 55, 0.08), 0 2px 4px rgba(31, 41, 55, 0.06);
+    --shadow-lg: 0 12px 24px rgba(31, 41, 55, 0.12), 0 4px 8px rgba(31, 41, 55, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    padding: 24px 24px 60px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Subtle dot grid background — Edwin's worksheet feel */
+    background-image: radial-gradient(circle, rgba(31, 41, 55, 0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+  }
+
+  .frame {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Masthead */
+  header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    /* Edwin "Mega" treatment, slightly larger */
+    font-family: 'Nunito', sans-serif;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--edwin-blue);
+    background: var(--edwin-blue-light);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 880px;
+    margin: 0 auto;
+    font-weight: 400;
+  }
+
+  /* Search */
+  /* Search bar — lives inside the upper gap of the periodic table (groups 4-9,
+     periods 1-2). Positioned with the same column-based calc as the gap-control
+     panel, but narrower: ~75% of the gap-control's width (6 columns wide,
+     centered horizontally within the 8-column gap-control band). Vertical
+     position pinned via JS in positionGapControl() so it tracks the same
+     row 1-3 band even as the table resizes.
+
+     z-index 2 so the gap-control (z-index 3) overlays it when a filter panel
+     is open. The empty-state banner sits at z-index 4, above both. */
+  .search {
+    position: absolute;
+    /* 4 cells + 4 gaps in from the table's left edge */
+    left: calc((100% - 17 * 3px) / 18 * 4 + 3px * 4);
+    /* 6 cells + 5 gaps wide */
+    width: calc((100% - 17 * 3px) / 18 * 6 + 3px * 5);
+    z-index: 2;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 2px solid var(--rule);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: left;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .search::placeholder {
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+
+  .search:focus {
+    border-color: var(--edwin-blue);
+    box-shadow: 0 0 0 4px var(--edwin-blue-light);
+  }
+
+  /* ================================================================
+     CHIP RAIL — compact filter affordance above the table
+     ================================================================ */
+  .filter-rail {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--rule);
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    box-shadow: var(--shadow-sm);
+    justify-content: center;
+  }
+
+  /* Lock chip widths so they don't reflow when the active text changes.
+     Each width is sized for the longest label that chip will display. */
+  .filter-chip[data-filter="year"]      { width: 184px; }
+  .filter-chip[data-filter="density"]   { width: 156px; }
+  .filter-chip[data-filter="radius"]    { width: 156px; }
+  .filter-chip[data-filter="abundance"] { width: 184px; }
+  .filter-chip[data-filter="state"]     { width: 184px; }
+  .filter-chip[data-filter="stardust"]  { width: 130px; }
+  .filter-chip-reset                    { width: 96px; }
+
+  .filter-chip .chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--edwin-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .filter-chip.expanded {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  .filter-chip.has-filter {
+    background: var(--edwin-blue-light);
+    border-color: var(--edwin-blue);
+    color: var(--edwin-blue-dark);
+  }
+
+  .filter-chip.has-filter.expanded {
+    background: var(--edwin-blue);
+    color: white;
+  }
+
+  /* === Per-filter chip color treatments ===
+     Each chip's active/has-filter color matches its histogram palette,
+     so the chip and the open histogram visually belong together. */
+
+  /* Year of Discovery — sepia / aged book */
+  .filter-chip[data-filter="year"].expanded,
+  .filter-chip[data-filter="year"].has-filter {
+    background: linear-gradient(135deg, #b8956a 0%, #8a6940 100%);
+    border-color: #5c4022;
+    color: #ffffff;
+  }
+
+  /* Density — battleship metallic blue-grey */
+  .filter-chip[data-filter="density"].expanded,
+  .filter-chip[data-filter="density"].has-filter {
+    background: linear-gradient(135deg, #5e6b7a 0%, #2f3a47 100%);
+    border-color: #1f2730;
+    color: #ffffff;
+  }
+
+  /* Atomic Radius — verdant green */
+  .filter-chip[data-filter="radius"].expanded,
+  .filter-chip[data-filter="radius"].has-filter {
+    background: linear-gradient(135deg, #1ed760 0%, #14a047 100%);
+    border-color: #0a6a2c;
+    color: #ffffff;
+  }
+
+  /* Crust Abundance — dirt brown with a green grass cap on top
+     (matches the Minecraft block treatment of the histogram) */
+  .filter-chip[data-filter="abundance"].expanded,
+  .filter-chip[data-filter="abundance"].has-filter {
+    background:
+      linear-gradient(to bottom, #5fa84a 0px, #5fa84a 5px, transparent 5px),
+      linear-gradient(135deg, #8b5a2b 0%, #6b4220 100%);
+    border-color: #3d2810;
+    color: #ffffff;
+  }
+
+  /* State & Type — deep slate teal, complementing the multi-color state chips inside */
+  .filter-chip[data-filter="state"].expanded,
+  .filter-chip[data-filter="state"].has-filter {
+    background: linear-gradient(135deg, #4a5a6e 0%, #2a3540 100%);
+    border-color: #1a2028;
+    color: #ffffff;
+  }
+
+  /* Stardust chip — deep indigo night sky vibe.
+     Background uses subtle radial-gradients evoking distant stars. */
+  .filter-chip[data-filter="stardust"].expanded,
+  .filter-chip[data-filter="stardust"].has-filter {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.4) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 65% 70%, rgba(255, 255, 255, 0.35) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 85% 25%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.25) 0.5px, transparent 1.5px),
+      linear-gradient(135deg, #1a1454 0%, #2a1f6e 100%);
+    border-color: #1a1454;
+    color: #ffffff;
+  }
+
+  .filter-chip[data-filter="stardust"].expanded .chip-icon-stardust,
+  .filter-chip[data-filter="stardust"].has-filter .chip-icon-stardust {
+    /* Make the sparkle icon glow yellow against the night sky */
+    filter: brightness(1.4) drop-shadow(0 0 4px rgba(255, 220, 100, 0.7));
+  }
+
+  .chip-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .chip-text {
+    line-height: 1;
+  }
+
+  .filter-chip-reset {
+    margin-left: 4px;
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--rule-strong);
+    color: var(--ink-soft);
+    box-shadow: none;
+  }
+
+  .filter-chip-reset:hover {
+    background: var(--edwin-red);
+    border-color: var(--edwin-red);
+    border-style: solid;
+    color: white;
+  }
+
+  .filter-chip-reset:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .filter-chip-reset:disabled:hover {
+    background: transparent;
+    border-color: var(--rule-strong);
+    color: var(--ink-soft);
+    box-shadow: none;
+  }
+
+  /* Empty-state banner — appears as a centered overlay card on top of the
+     periodic table when the active filter combination matches zero elements.
+     Anchored to the centre of `#table` (the main 7-row block); the f-block
+     rows below are visually peripheral, so the centre of the main block
+     reads as "the middle of the periodic table" to most users. Hidden by
+     default via the `hidden` attribute; applyFilters() toggles it. */
+  .empty-state-banner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 18px;
+    min-width: 280px;
+    max-width: 360px;
+    background: var(--surface);
+    border: 1.5px solid var(--edwin-blue);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    color: var(--ink);
+    font-size: 12.5px;
+    line-height: 1.4;
+    animation: emptyStateIn 0.18s ease-out;
+  }
+
+  .empty-state-banner[hidden] {
+    display: none;
+  }
+
+  .empty-state-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .empty-state-icon {
+    font-size: 14px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+
+  .empty-state-text {
+    color: var(--ink);
+  }
+
+  .empty-state-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .empty-state-btn {
+    appearance: none;
+    border: 1px solid var(--rule-strong);
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    font-family: inherit;
+  }
+
+  .empty-state-btn:hover {
+    background: var(--surface-2, #f5f5f5);
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  .empty-state-btn-primary {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  .empty-state-btn-primary:hover {
+    background: var(--edwin-blue-dark);
+    border-color: var(--edwin-blue-dark);
+    color: white;
+  }
+
+  @keyframes emptyStateIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  /* ================================================================
+     GAP CONTROL — the active filter renders inside the upper gap
+     of the table itself (groups 3-12, periods 1-2)
+     ================================================================ */
+  .gap-control {
+    /* Position is set via JS at runtime (positionGapControl) because CSS
+       percentage math doesn't resolve correctly here — `100%` in top/height
+       refers to parent height, not width, so cell-height calc breaks.
+       JS measures the first element cell and pins the panel's top/height
+       to fractions of that cell height, so the panel sits floating between
+       the middle of row 1 and the middle of row 3. */
+    position: absolute;
+    left: calc((100% - 17 * 3px) / 18 * 3 + 3px * 3);
+    width: calc((100% - 17 * 3px) / 18 * 8 + 3px * 7);
+    background: var(--surface);
+    border: 1.5px solid var(--edwin-blue);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+    z-index: 3;
+    box-sizing: border-box;
+    animation: gapControlIn 0.18s ease-out;
+  }
+
+  .gap-control[hidden] {
+    display: none;
+  }
+
+  @keyframes gapControlIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .gap-control-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .gap-control-icon {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .gap-control-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Compact histogram fitted inside the gap */
+  .histo-chart {
+    position: relative;
+    flex: 1;
+    user-select: none;
+    min-height: 0;
+  }
+
+  .histo-bars {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  .histo-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: background 0.15s ease, opacity 0.15s ease;
+  }
+
+  /* Default histogram colors (used when no per-filter override applies) */
+  .histo-bar.below-threshold {
+    background: var(--edwin-blue);
+    opacity: 1;
+  }
+
+  .histo-bar.above-threshold {
+    background: var(--rule-strong);
+    opacity: 0.55;
+  }
+
+  /* === Per-filter histogram color treatments ===
+     Each filter has its own palette evoking what the filter measures.
+     Year of Discovery: aged sepia / parchment
+     Density: dark metallic blue-grey (battleship)
+     Atomic Radius: deep verdant green
+     Crust Abundance: dirt brown with a grass cap (like a Minecraft block)
+     */
+
+  /* Year of Discovery — sepia / aged book */
+  .gap-control[data-active-filter="year"] .histo-bar.below-threshold {
+    background: linear-gradient(to bottom, #b8956a 0%, #8a6940 100%);
+  }
+  .gap-control[data-active-filter="year"] .histo-bar.above-threshold {
+    background: #d9cdb8;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="year"] .histo-thumb {
+    background: #5c4022;
+  }
+  .gap-control[data-active-filter="year"] .histo-thumb::before {
+    background: #8a6940;
+  }
+
+  /* Density — battleship metallic blue-grey */
+  .gap-control[data-active-filter="density"] .histo-bar.below-threshold {
+    background: linear-gradient(to bottom, #5e6b7a 0%, #2f3a47 100%);
+  }
+  .gap-control[data-active-filter="density"] .histo-bar.above-threshold {
+    background: #c0c8d0;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="density"] .histo-thumb {
+    background: #1f2730;
+  }
+  .gap-control[data-active-filter="density"] .histo-thumb::before {
+    background: #4a5563;
+  }
+
+  /* Atomic Radius — verdant green (Spotify-ish) */
+  .gap-control[data-active-filter="radius"] .histo-bar.below-threshold {
+    background: linear-gradient(to bottom, #1ed760 0%, #14a047 100%);
+  }
+  .gap-control[data-active-filter="radius"] .histo-bar.above-threshold {
+    background: #c5e8d2;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="radius"] .histo-thumb {
+    background: #0a6a2c;
+  }
+  .gap-control[data-active-filter="radius"] .histo-thumb::before {
+    background: #14a047;
+  }
+
+  /* Crust Abundance — Minecraft-style dirt with a grass cap.
+     Brown column with a 4px green strip at the top. */
+  .gap-control[data-active-filter="abundance"] .histo-bar.below-threshold {
+    background:
+      linear-gradient(to bottom, #5fa84a 0px, #5fa84a 4px, transparent 4px),
+      linear-gradient(to bottom, #8b5a2b 0%, #6b4220 100%);
+  }
+  .gap-control[data-active-filter="abundance"] .histo-bar.above-threshold {
+    background: #d8c8b0;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="abundance"] .histo-thumb {
+    background: #3d2810;
+  }
+  .gap-control[data-active-filter="abundance"] .histo-thumb::before {
+    background: #6b4220;
+  }
+
+  /* Stardust gap-control — deep indigo night sky with subtle starfield.
+     Chips for each cosmic origin take a color that evokes that process. */
+  .gap-control[data-active-filter="stardust"] {
+    background:
+      radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.35) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 28% 65%, rgba(255, 240, 180, 0.45) 0.6px, transparent 1.8px),
+      radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.3) 0.4px, transparent 1.2px),
+      radial-gradient(circle at 72% 75%, rgba(255, 255, 255, 0.4) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 88% 22%, rgba(200, 220, 255, 0.5) 0.6px, transparent 1.8px),
+      radial-gradient(circle at 18% 88%, rgba(255, 255, 255, 0.25) 0.4px, transparent 1.2px),
+      radial-gradient(circle at 60% 92%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 95% 55%, rgba(255, 240, 180, 0.4) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 38% 8%, rgba(255, 255, 255, 0.35) 0.5px, transparent 1.5px),
+      linear-gradient(135deg, #0d0a35 0%, #1a1454 60%, #2a1f6e 100%);
+    border-color: #1a1454;
+    color: #f5f3ff;
+  }
+
+  .gap-control[data-active-filter="stardust"] .gap-control-label {
+    color: #fff;
+  }
+
+  .gap-control[data-active-filter="stardust"] .gap-control-icon {
+    filter: drop-shadow(0 0 6px rgba(255, 220, 100, 0.8));
+  }
+
+  .gap-control[data-active-filter="stardust"] .gap-control-explainer {
+    color: rgba(245, 243, 255, 0.75);
+    -webkit-line-clamp: unset;
+    display: block;
+  }
+
+  /* Two-part stardust explainer: bold centered prompt on top, dynamic body below.
+     The prompt stays constant; the body changes based on which origin is selected. */
+  .stardust-prompt {
+    font-weight: 700;
+    text-align: center;
+    color: rgba(255, 235, 180, 0.95);
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stardust-body {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+
+  /* Two-part state explainer — same structure as stardust, but on the
+     default light theme. Bold prompt up top, dynamic body below. */
+  .state-prompt {
+    font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .state-body {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+
+  /* Stardust origin chips — each gets a color matching its cosmic process */
+  .gap-control[data-active-filter="stardust"] .stardust-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: rgba(245, 243, 255, 0.85);
+  }
+
+  /* Hover only applies to *non-active* chips so it doesn't conceal the active color */
+  .gap-control[data-active-filter="stardust"] .stardust-chip:not(.active):hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Per-process active colors. Selectors are nested under the gap-control to
+     match the specificity of the base/hover rules above, so the active color
+     wins reliably. */
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="bigbang"].active {
+    background: #ff6b35; border-color: #ff6b35; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="cosmicray"].active {
+    background: #c084fc; border-color: #c084fc; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="smallstars"].active {
+    background: #fbbf24; border-color: #fbbf24; color: #4a2800;
+  }
+  /* Massive stars: light blue — like a young blue supergiant (Rigel, etc.) */
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="bigstars"].active {
+    background: #60a5fa; border-color: #60a5fa; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="supernova"].active {
+    background: #ef4444; border-color: #ef4444; color: white;
+  }
+  /* Neutron-star merger: warm orange */
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="merger"].active {
+    background: #f97316; border-color: #f97316; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="synthetic"].active {
+    background: #a3a3a3; border-color: #a3a3a3; color: #1a1a1a;
+  }
+
+  .histo-drag {
+    position: absolute;
+    /* Extend the hit zone past the chart in all four directions so the thumb
+       circle stays fully grabbable at both ends of the slider. The horizontal
+       extension matters most: at 0% / 100% the circle's outer half sits past
+       the chart edge, otherwise overlapping the gap-control's inner border. */
+    inset: -8px -12px -10px -12px;
+    cursor: grab;
+  }
+
+  .histo-drag:active {
+    cursor: grabbing;
+  }
+
+  .histo-thumb {
+    position: absolute;
+    top: 6px;     /* aligned to chart top once drag layer is extended */
+    bottom: 8px;
+    width: 2px;
+    background: var(--edwin-blue-dark);
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  /* Visible thumb circle — bigger and more prominent */
+  .histo-thumb::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    background: var(--edwin-blue);
+    border: 3px solid white;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 6px rgba(74, 144, 226, 0.4), var(--shadow-sm);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  /* Larger invisible hit zone around the thumb for easier grabbing */
+  .histo-thumb::after {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    pointer-events: none; /* the parent .histo-drag handles pointer events */
+  }
+
+  /* Thumb is a sibling of .histo-drag (not a child), so we use the
+     general-sibling combinator to drive hover/active feedback on the
+     visual circle from the drag layer. */
+  .histo-drag:hover ~ .histo-thumb::before {
+    transform: translateX(-50%) scale(1.15);
+    box-shadow: 0 3px 10px rgba(74, 144, 226, 0.5), var(--shadow-md);
+  }
+
+  .histo-drag:active ~ .histo-thumb::before {
+    transform: translateX(-50%) scale(1.05);
+  }
+
+  /* Always-visible explainer text below the slider/buttons */
+  .gap-control-explainer {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-top: 4px;
+  }
+
+  /* State filter inline controls (for the State chip) — fit in narrow gap */
+  .state-controls {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    align-items: center;
+    justify-content: stretch;
+    flex-shrink: 0;
+    min-height: 28px;
+  }
+
+  .state-controls .toggle-chip {
+    padding: 5px 6px;
+    font-size: 10.5px;
+    flex: 1 1 0;
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  /* Visual separator between mutually-exclusive phase chips
+     (Solid/Liquid/Gas — radio behavior) and the orthogonal flag chips
+     (Synthetic, Radioactive — independent toggles). */
+  .state-controls .state-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    width: 1px;
+    background: var(--rule-strong);
+    margin: 4px 2px;
+    border-radius: 1px;
+  }
+
+  .toggle-chip {
+    padding: 6px 13px;
+    border: 1.5px solid var(--rule);
+    background: var(--surface);
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .toggle-chip:hover {
+    border-color: var(--ink-muted);
+  }
+
+  .toggle-chip.active {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  /* Per-state colors when active — each evokes its physical state.
+     Solid: dark graphite (almost black)
+     Liquid: deep ocean blue
+     Gas: pale sky blue with dark blue text (only chip with non-white text)
+     Synthetic: AI-lab purple
+     Radioactive: keeps Edwin red */
+  .toggle-chip[data-state="solid"].active {
+    background: #2a2d33;
+    border-color: #2a2d33;
+    color: white;
+  }
+  .toggle-chip[data-state="liquid"].active {
+    background: #1f4a7a;
+    border-color: #1f4a7a;
+    color: white;
+  }
+  .toggle-chip[data-state="gas"].active {
+    background: #c8e0f4;
+    border-color: #8fb8d8;
+    color: #1f4a7a;
+  }
+  .toggle-chip[data-flag="synthetic"].active {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: white;
+  }
+
+  .toggle-chip[data-flag="radioactive"].active {
+    background: var(--edwin-red);
+    border-color: var(--edwin-red);
+  }
+
+  /* Element greyscale state for slider filtering */
+  .element.faded {
+    filter: grayscale(0.85) opacity(0.25);
+    border-left-color: var(--ink-muted) !important;
+  }
+
+  .element.faded:hover {
+    filter: grayscale(0) opacity(1);
+  }
+
+  /* Legend below the table — horizontal reference pattern */
+  .legend-below {
+    margin-top: 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .legend-below-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    padding-left: 8px;
+    border-left: 3px solid var(--edwin-purple);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    flex: 1;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 9px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    transition: all 0.12s ease;
+    user-select: none;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .legend-item:hover {
+    background: var(--bg);
+    border-color: var(--ink-muted);
+  }
+
+  .legend-item.dimmed {
+    opacity: 0.35;
+  }
+
+  .legend-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+
+  /* Periodic Table Grid */
+  .table {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 3px;
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  .lanthanide-row, .actinide-row {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 3px;
+    margin-bottom: 3px;
+  }
+
+  .lanthanide-row { margin-top: 10px; }
+
+  .element {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--cat-color, var(--ink-muted));
+    padding: 3px 2px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    overflow: hidden;
+  }
+
+  .element:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    z-index: 5;
+    border-color: var(--cat-color, var(--ink-muted));
+  }
+
+  .element.dimmed {
+    opacity: 0.25;
+  }
+
+  .element.placeholder {
+    border: none;
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .number {
+    font-size: clamp(7px, 0.75vw, 10px);
+    font-weight: 700;
+    color: var(--ink-muted);
+    line-height: 1;
+  }
+
+  .symbol {
+    font-weight: 800;
+    font-size: clamp(15px, 1.7vw, 22px);
+    line-height: 1;
+    text-align: center;
+    color: var(--ink);
+    margin: auto 0;
+    letter-spacing: -0.01em;
+  }
+
+  .name {
+    font-size: clamp(5px, 0.55vw, 8px);
+    font-weight: 600;
+    text-align: center;
+    color: var(--ink-soft);
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mass {
+    font-size: clamp(5px, 0.5vw, 7px);
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-align: center;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* Series indicator markers */
+  .series-marker {
+    aspect-ratio: 1 / 1;
+    border: 2px dashed var(--rule-strong);
+    border-radius: var(--radius-md);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 41, 55, 0.55);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .modal-backdrop.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  .modal {
+    background: var(--surface);
+    max-width: 680px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    position: relative;
+  }
+
+  .modal-backdrop.active .modal {
+    transform: translateY(0);
+  }
+
+  .modal-header {
+    padding: 32px 36px 24px;
+    position: relative;
+    border-left: 6px solid var(--cat-color, var(--edwin-blue));
+    background: var(--surface-soft);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .modal-meta {
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+    gap: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    padding-right: 56px; /* avoid close button */
+  }
+
+  .modal-meta .dot {
+    color: var(--ink-muted);
+  }
+
+  .modal-symbol {
+    font-weight: 900;
+    font-size: 80px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .modal-name {
+    font-weight: 700;
+    font-size: 28px;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .modal-category-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    background: var(--cat-color);
+    color: white;
+    border-radius: 999px;
+    margin-top: 14px;
+  }
+
+  .modal-body {
+    padding: 28px 36px 36px;
+  }
+
+  .properties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .prop {
+    background: var(--surface-soft);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+  }
+
+  .prop-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .prop-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .prop-value .unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-left: 4px;
+  }
+
+  .description {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink);
+    font-weight: 400;
+    padding: 20px 22px;
+    background: var(--edwin-blue-light);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--edwin-blue);
+  }
+
+  /* Floating fullscreen button — always available */
+  .fullscreen-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  /* Hamburger menu button — mirrors the fullscreen button on the opposite
+     corner (top-left vs top-right). Same dimensions, same circular treatment,
+     same z-index so both float above the table together. */
+  .menu-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  .menu-btn:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Games launcher button — same circular treatment as the hamburger so
+     the corner cluster reads as one toolbar, but with a hover that rolls
+     the die slightly to hint at the playful behaviour behind it. The
+     8px gap matches the spacing the menu panel uses below its trigger,
+     so the corner has consistent rhythm. */
+  .games-btn {
+    position: fixed;
+    top: 20px;
+    left: 68px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  .games-btn:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Dice tilts ~14° on hover — subtle nod to "let's roll" without being
+     animated-icon-busy. The transition lives on the SVG so only the icon
+     rotates while the button itself does its scale lift in parallel. */
+  .games-btn svg {
+    transition: transform 0.18s ease;
+  }
+
+  .games-btn:hover svg {
+    transform: rotate(-14deg);
+  }
+
+  /* Games "coming soon" panel — anchored below the games button, mirroring
+     the hamburger menu panel's positioning rhythm (top: 68px = 20 button
+     + 40 height + 8 gap). Narrower than the hamburger panel since the
+     content is just a short message + close button. Reuses the same
+     fade-in animation so the corner cluster's panels feel related.
+
+     This entire panel is temporary — when the launcher overlay is built
+     in the next chat, replace markup, CSS, and JS in one go. */
+  .games-panel {
+    position: fixed;
+    top: 68px;
+    left: 68px;
+    width: 220px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 91;
+    overflow: hidden;
+    padding: 18px 16px 16px;
+    text-align: center;
+    animation: menuPanelIn 0.16s ease-out;
+  }
+
+  .games-panel[hidden] {
+    display: none;
+  }
+
+  .games-panel-icon {
+    color: var(--edwin-blue);
+    margin: 0 auto 8px;
+    line-height: 0;
+  }
+
+  .games-panel-title {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+  }
+
+  .games-panel-body {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+
+  .games-panel-close {
+    background: var(--edwin-blue);
+    border: 0;
+    color: white;
+    padding: 7px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.12s ease, transform 0.12s ease;
+  }
+
+  .games-panel-close:hover {
+    background: var(--edwin-blue-dark);
+    transform: translateY(-1px);
+  }
+  /* Menu panel — anchored just below the hamburger button. Uses fixed
+     positioning so it scrolls with the button, not the page content.
+     z-index 91 so it sits above the button itself when both are visible. */
+  .menu-panel {
+    position: fixed;
+    top: 68px;
+    left: 20px;
+    width: 260px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 91;
+    overflow: hidden;
+    animation: menuPanelIn 0.16s ease-out;
+  }
+
+  .menu-panel[hidden] {
+    display: none;
+  }
+
+  @keyframes menuPanelIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .menu-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* About section — collapsed accordion by default. The grid-template-rows
+     0fr → 1fr trick animates the height to the natural content size with
+     no magic max-height ceiling, and the inner wrapper's overflow:hidden
+     keeps content clipped during the transition. */
+  .menu-about {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.22s ease, border-top-color 0.22s ease;
+    border-top: 1px solid var(--rule);
+  }
+
+  .menu-about.expanded {
+    grid-template-rows: 1fr;
+  }
+
+  /* When collapsed, the border-top would still show as a stray line above
+     zero content — hide it until the section starts opening. */
+  .menu-about:not(.expanded) {
+    border-top-color: transparent;
+  }
+
+  .menu-about-inner {
+    overflow: hidden;
+    padding: 0 16px;
+    transition: padding 0.22s ease;
+  }
+
+  .menu-about.expanded .menu-about-inner {
+    padding: 14px 16px 14px;
+  }
+
+  .menu-about-title {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .menu-about p {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  .menu-about-note {
+    font-size: 11.5px !important;
+    font-style: italic;
+    color: var(--ink-muted) !important;
+  }
+
+  /* Hide button — sits at the bottom of the expanded About section.
+     Subtle, link-like; the up arrow signals "fold this back up". */
+  .menu-hide {
+    background: transparent;
+    border: 0;
+    padding: 4px 0 0;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease;
+  }
+
+  .menu-hide:hover {
+    color: var(--edwin-blue);
+  }
+
+  /* When About is expanded, give its trigger row a faint highlight so the
+     visual relationship between trigger and expanded content is obvious. */
+  .menu-item[aria-expanded="true"] {
+    background: var(--surface-2, #f5f5f5);
+  }
+
+  .menu-item[aria-expanded="true"] .menu-item-icon {
+    color: var(--edwin-blue);
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+
+  .menu-item:last-child {
+    border-bottom: 0;
+  }
+
+  .menu-item:hover {
+    background: var(--surface-2, #f5f5f5);
+  }
+
+  .menu-item-icon {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .menu-item-label {
+    flex: 1;
+    line-height: 1.2;
+  }
+
+  .menu-item-check {
+    flex-shrink: 0;
+    color: var(--edwin-blue);
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  .menu-item[aria-pressed="true"] .menu-item-check {
+    opacity: 1;
+  }
+
+  /* Compact view — toggled from the menu. Hides the eyebrow + subtitle and
+     tightens the H1 so the table fills more of the viewport. The header
+     element itself stays so the title still anchors the page. */
+  body.compact-view .eyebrow,
+  body.compact-view .subtitle {
+    display: none;
+  }
+
+  body.compact-view header {
+    margin-bottom: 12px;
+  }
+
+  body.compact-view h1 {
+    font-size: 28px;
+    margin-bottom: 0;
+  }
+
+  .fullscreen-btn:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  .fullscreen-btn .icon-collapse {
+    display: none;
+  }
+
+  /* When in fullscreen, swap icons */
+  body.is-fullscreen .fullscreen-btn .icon-expand {
+    display: none;
+  }
+
+  body.is-fullscreen .fullscreen-btn .icon-collapse {
+    display: block;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+    transform: rotate(90deg);
+  }
+
+  /* Atom viewer */
+  .atom-viewer {
+    margin: 24px 0 8px;
+    padding: 20px;
+    background: #1a1f2e;
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .atom-canvas {
+    width: 100%;
+    height: 280px;
+    display: block;
+    cursor: grab;
+    border-radius: var(--radius-sm);
+  }
+
+  .atom-canvas:active { cursor: grabbing; }
+
+  .atom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .atom-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .model-toggle {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 3px;
+  }
+
+  .model-toggle button {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .model-toggle button:hover {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .model-toggle button.active {
+    background: var(--cat-color, var(--edwin-blue));
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .atom-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .atom-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .atom-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .atom-note {
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-style: italic;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    padding-top: 28px;
+    margin-top: 16px;
+    border-top: 1px solid var(--rule);
+  }
+
+  footer strong {
+    color: var(--edwin-blue);
+    font-weight: 700;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    body { padding: 20px 12px 60px; }
+    .table, .lanthanide-row, .actinide-row { gap: 3px; }
+    .element { padding: 3px; border-left-width: 3px; }
+    .name, .mass { display: none; }
+    .modal-symbol { font-size: 56px; }
+    .modal-name { font-size: 22px; }
+    .properties { grid-template-columns: 1fr; gap: 10px; }
+    .modal-header, .modal-body { padding: 24px; }
+    h1 { font-size: 32px; }
+    .subtitle { font-size: 16px; }
+    /* Mobile: gap-control hidden (too small for upper gap on narrow screens).
+       Filtering via chips still updates state but the histogram UI is hidden.
+       A proper mobile filter UX would need a bottom-sheet pattern. */
+    .gap-control { display: none; }
+    .filter-rail { gap: 4px; }
+    .filter-chip { font-size: 12px; padding: 6px 10px; }
+    /* Search bar can't fit in the upper gap on mobile, so break it out of
+       the absolute-positioned slot and span it across the full grid width
+       as the first grid item. The 118 element cells follow normally. */
+    .search {
+      position: static;
+      grid-column: 1 / -1;
+      width: 100%;
+      margin-bottom: 8px;
+      font-size: 13px;
+      padding: 8px 14px;
+    }
+  }
+</style>
+</head>
+<body>
+<button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-haspopup="true" aria-expanded="false" title="Menu">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6 H21"/>
+    <path d="M3 12 H21"/>
+    <path d="M3 18 H21"/>
+  </svg>
+</button>
+
+<!-- Games launcher trigger — sits immediately right of the hamburger.
+     Today this opens a small "coming soon" panel; the real launcher
+     overlay (game tiles, difficulty pickers, etc.) replaces it in the
+     next chat per the build plan in the PERIODIC GAMES SYSTEM section
+     of the parking lot. -->
+<button class="games-btn" id="gamesBtn" aria-label="Open games" aria-haspopup="true" aria-expanded="false" title="Games">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Single die — rounded square with five pips (showing the "5" face) -->
+    <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+    <circle cx="7.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
+    <circle cx="16.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
+    <circle cx="12"   cy="12"  r="1.1" fill="currentColor" stroke="none"/>
+    <circle cx="7.5" cy="16.5" r="1.1" fill="currentColor" stroke="none"/>
+    <circle cx="16.5" cy="16.5" r="1.1" fill="currentColor" stroke="none"/>
+  </svg>
+</button>
+
+<div class="games-panel" id="gamesPanel" hidden role="dialog" aria-labelledby="gamesPanelTitle">
+  <div class="games-panel-icon" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3.5"/>
+      <circle cx="7.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
+      <circle cx="16.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/>
+      <circle cx="12"   cy="12"  r="1.1" fill="currentColor" stroke="none"/>
+      <circle cx="7.5" cy="16.5" r="1.1" fill="currentColor" stroke="none"/>
+      <circle cx="16.5" cy="16.5" r="1.1" fill="currentColor" stroke="none"/>
+    </svg>
+  </div>
+  <h3 class="games-panel-title" id="gamesPanelTitle">Coming soon!</h3>
+  <p class="games-panel-body">Six element-themed mini-games are being built. Check back soon!</p>
+  <button type="button" class="games-panel-close" id="gamesPanelClose">Got it</button>
+</div>
+
+<div class="menu-panel" id="menuPanel" hidden role="menu" aria-labelledby="menuBtn">
+  <div class="menu-list">
+    <button class="menu-item" data-action="about" role="menuitem" aria-expanded="false" aria-controls="menuAbout">
+      <span class="menu-item-icon" aria-hidden="true">📖</span>
+      <span class="menu-item-label">About this table</span>
+    </button>
+    <button class="menu-item" data-action="compact" role="menuitem" aria-pressed="false">
+      <span class="menu-item-icon" aria-hidden="true">◰</span>
+      <span class="menu-item-label">Compact view</span>
+      <span class="menu-item-check" aria-hidden="true">✓</span>
+    </button>
+    <button class="menu-item" data-action="reset" role="menuitem">
+      <span class="menu-item-icon" aria-hidden="true">↺</span>
+      <span class="menu-item-label">Reset all filters</span>
+    </button>
+  </div>
+
+  <!-- About section: collapsed by default, slides down when "About this table"
+       is clicked. Uses a grid-template-rows 0fr → 1fr trick so the height
+       animates to the natural content height with no magic max-height value. -->
+  <div class="menu-about" id="menuAbout" aria-hidden="true">
+    <div class="menu-about-inner">
+      <h3 class="menu-about-title">About this table</h3>
+      <p>An interactive periodic table built as part of an EdTech school project. Filter elements by year of discovery, density, atomic radius, crustal abundance, physical state, and nucleosynthetic origin — or click any element to see its atomic structure and full data sheet.</p>
+      <p class="menu-about-note">Atomic data follows IUPAC standards. Phases for synthetic elements past element 111 are theoretical predictions and remain debated in the literature.</p>
+      <button class="menu-hide" id="menuAboutHide" aria-label="Hide about section">
+        <span aria-hidden="true">↑</span> Hide
+      </button>
+    </div>
+  </div>
+</div>
+
+<button class="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen" title="Toggle fullscreen">
+  <svg class="icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 3 H3 V8"/>
+    <path d="M16 3 H21 V8"/>
+    <path d="M8 21 H3 V16"/>
+    <path d="M16 21 H21 V16"/>
+  </svg>
+  <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 8 H8 V3"/>
+    <path d="M21 8 H16 V3"/>
+    <path d="M3 16 H8 V21"/>
+    <path d="M21 16 H16 V21"/>
+  </svg>
+</button>
+<div class="frame">
+
+  <header>
+    <h1>The Periodic Table</h1>
+    <div class="eyebrow">Interactive Reference</div>
+    <p class="subtitle">Explore all 118 known elements. Click any element to learn more, view its atomic structure, and (for Hydrogen, Carbon, and Oxygen) see the orbital model in 3D.</p>
+  </header>
+
+  <div class="filter-rail">
+    <button class="filter-chip" data-filter="year">
+      <span class="chip-icon">📅</span>
+      <span class="chip-text" id="chip-text-year">Year of Discovery</span>
+    </button>
+    <button class="filter-chip" data-filter="density">
+      <span class="chip-icon">⚖</span>
+      <span class="chip-text" id="chip-text-density">Density</span>
+    </button>
+    <button class="filter-chip" data-filter="radius">
+      <span class="chip-icon">⌖</span>
+      <span class="chip-text" id="chip-text-radius">Atomic Radius</span>
+    </button>
+    <button class="filter-chip" data-filter="abundance">
+      <span class="chip-icon">🌍</span>
+      <span class="chip-text" id="chip-text-abundance">Crust Abundance</span>
+    </button>
+    <button class="filter-chip" data-filter="state">
+      <span class="chip-icon">❄</span>
+      <span class="chip-text" id="chip-text-state">State &amp; Type</span>
+    </button>
+    <button class="filter-chip" data-filter="stardust">
+      <span class="chip-icon chip-icon-stardust">✨</span>
+      <span class="chip-text" id="chip-text-stardust">Stardust</span>
+    </button>
+    <button class="filter-chip filter-chip-reset" id="resetAllBtn" disabled>
+      <span class="chip-icon">↺</span>
+      <span class="chip-text">Reset</span>
+    </button>
+  </div>
+
+  <div class="table" id="table">
+    <input type="text" class="search" id="search" placeholder="Search by name, symbol, or atomic number" autocomplete="off">
+    <div class="empty-state-banner" id="emptyStateBanner" hidden>
+      <div class="empty-state-row">
+        <span class="empty-state-icon" aria-hidden="true">⌀</span>
+        <span class="empty-state-text">No elements match this combination of filters.</span>
+      </div>
+      <div class="empty-state-actions">
+        <button type="button" class="empty-state-btn" id="emptyStateDismiss">Dismiss</button>
+        <button type="button" class="empty-state-btn empty-state-btn-primary" id="emptyStateDismissReset">Dismiss &amp; Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-below" id="legendBelow">
+    <div class="legend-below-title">Categories</div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <footer>
+    Click any element for details &nbsp;·&nbsp; Atomic data per IUPAC standards &nbsp;·&nbsp; Built with <strong>Edwin</strong>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+    <div class="modal-header" id="modalHeader"></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* =============================================================================
+   PERIODIC TABLE — ARCHITECTURE OVERVIEW
+   =============================================================================
+
+   Single-file HTML/CSS/JS interactive periodic table for classroom use.
+   Edwin design system. Currently the foundation; planned future work is the
+   "Periodic Games" system (see end of file for parking lot).
+
+   Last major update: 2026-04-30. Status: stable, ready for next-chat work on
+   the top-of-page area (masthead, search bar relocation, future games launcher).
+
+   DATA
+   ----
+   Two parallel data structures, all keyed by atomic number:
+   - ELEMENTS[]: positional array. See field comment on the array's line.
+     Tuple is [number, symbol, name, mass, category, group, period,
+     electronConfig, electronegativity, meltingK, boilingK, density,
+     discoveredBy, year, description].
+   - ELEMENT_EXTRA{}: object with [empirical_radius_pm, abundance_mg_per_kg,
+     state_at_RT, radioactive] per atomic number. Separate so we can add
+     supplemental fields without rewriting 118 rows of ELEMENTS.
+   - ELEMENT_ORIGIN{}: nucleosynthetic origin per atomic number. One of:
+     bigbang, cosmicray, smallstars, bigstars, supernova, merger, synthetic.
+     Used by the Stardust filter.
+
+   FILTERING SYSTEM
+   ----------------
+   Filters compose via intersection (AND). Six filter dimensions:
+   - 4 sliders: year, density, radius, abundance — stored 0-100 in sliderState,
+     mapped to real values via getXThreshold(pos).
+   - 1 toggle group: state-at-RT (solid/liquid/gas, radio behaviour) plus
+     synthetic and radioactive flags — stored in toggleState.states (Set),
+     toggleState.synthetic, and toggleState.radioactive. Phase chips and
+     flag chips are orthogonal dimensions that AND-combine at filter time.
+   - 1 single-select toggle: stardust origin — stored in toggleState.origins.
+     Originally multi-select; locked to single-select by renderStardustControls.
+   Plus: search box (#search) and category-legend click filter (activeFilter).
+
+   applyFilters() is the central re-evaluation. Call after any mutation.
+   It toggles .faded on element cells (grayscale + reduced opacity).
+
+   FILTER UI — CHIP RAIL + FLOATING GAP-CONTROL
+   ---------------------------------------------
+   Above the table: a horizontal rail of pill-shaped filter chips. One per
+   dimension, plus a Reset. Each chip has fixed widths (CSS) so the rail
+   doesn't reflow when chip text changes, and a brand color when active or
+   has-filter:
+     year      — sepia gradient
+     density   — battleship metallic gradient
+     radius    — Spotify green gradient
+     abundance — dirt brown with 5px green grass cap (Minecraft block)
+     state     — slate teal gradient
+     stardust  — deep indigo night sky with star field, glowing yellow ✨
+     reset     — neutral until any filter active, then visible
+
+   Clicking a chip expands its control INSIDE THE TABLE's upper-gap region.
+   The .gap-control panel:
+     - Position is set via JS at runtime in positionGapControl(). It uses
+       getBoundingClientRect on the first element cell to compute pixel
+       heights, then pins gap.style.top and gap.style.height. CSS percentage
+       math doesn't work here because '100%' in top/height refers to parent
+       HEIGHT, not width — and we want cell-width-based sizing.
+     - Top edge sits at the middle of row 1 (overlapping the empty middle
+       of the H/He row). Bottom edge sits at the middle of row 3 (Na/Mg
+       row, also empty in middle columns). Width spans columns 4-11.
+     - Inside: a header (icon + label), then the control body (histogram for
+       sliders, chip row for state, chip row for stardust), then a 1-2 line
+       always-visible explainer.
+
+   The histogram bars in each slider use the filter's brand-color gradient
+   for "below threshold" and a faded version for "above threshold". Thumb
+   colors match. See per-filter [data-active-filter="X"] CSS rules.
+
+   The State and Stardust panels render their own toggle chips; each chip
+   has a semantic active color (graphite/ocean/sky/purple/red for state;
+   per-cosmic-process colors for stardust). Hover does not override active.
+
+   The Stardust explainer is special: a bold centered prompt up top
+   ("Where in the universe was each element forged?") plus a dynamic body
+   line below that swaps as origins are selected. STARDUST_COPY holds the
+   per-origin science copy. State & Type does NOT yet have this two-line
+   pattern (planned — see parking lot).
+
+   FILTER_CONFIG holds per-slider config (label, icon, tip, getThreshold,
+   activeText). To add a new slider dimension: add a FILTER_CONFIG entry,
+   a sliderState entry, a getXThreshold function, a clause in applyFilters.
+
+   DETAIL MODAL
+   ------------
+   Clicking a non-faded element opens a modal with full info plus a 3D atom
+   viewer (Three.js r128). For H, C, and O the viewer also offers an
+   orbital cloud mode (probability density). atomState stores the current
+   viewer state; disposeAtomViewer() must be called on modal close to free
+   GPU resources.
+
+   LEGEND
+   ------
+   Below the table, a horizontal pill row of category chips. Click any to
+   filter by that category. Click again or click another to clear.
+   The lanthanide and actinide rows are inserted before the legend at
+   buildTable() time.
+
+   FULLSCREEN
+   ----------
+   Top-right floating button calls requestFullscreen on documentElement.
+   Body class 'is-fullscreen' swaps the button's expand/collapse icon.
+   Fullscreen change re-pins the gap-control via positionGapControl().
+
+   KEY ENTRY POINTS FOR FUTURE WORK
+   --------------------------------
+   - openModal(elementData) / closeModal()
+   - applyFilters() — call after any filter state mutation
+   - openFilterPanel(key) / closeFilterPanel() — chip-rail expansion
+   - positionGapControl() — JS-driven sizing of the floating filter panel
+   - renderHistogram(key), renderStateControls(), renderStardustControls()
+   - buildTable() / buildLegend() — DOM construction (run once on load)
+   - resetAllFilters() — clears all filter state and updates UI
+
+   TOP-OF-PAGE LAYOUT (next-chat work)
+   ------------------------------------
+   The next planned chat will work on the masthead area: hamburger/menu
+   button, search bar relocation, eventual games launcher button. Current
+   layout: <header> with h1 "The Periodic Table" + eyebrow + search input
+   sits centered above the chip rail. Fullscreen button is fixed top-right
+   at z-index 90. Top-left is currently empty (reserved for hamburger and
+   games launcher).
+
+   PLANNED: GAMES SYSTEM (not yet built)
+   -------------------------------------
+   See parking lot at end of file. Six game modes (Elementle, Tinpoint,
+   Eleminator, Curie-ousity, Atomic Clock, Test Tube) sharing a launcher
+   overlay and a persistent game-bar. Three difficulty levels with
+   game-specific medium-mode rules. Body classes for difficulty so table
+   modifications can be CSS-only.
+   ============================================================================= */
+
+// Element data: [number, symbol, name, mass, category, group, period, electronConfig, electronegativity, meltingK, boilingK, density, discoveredBy, year, description]
+const ELEMENTS = [
+  [1,"H","Hydrogen",1.008,"nonmetal",1,1,"1s¹",2.20,13.99,20.271,0.00008988,"Henry Cavendish",1766,"The lightest and most abundant element in the universe, hydrogen powers the stars and forms the bulk of the cosmos. On Earth it appears almost exclusively in compounds, most notably water."],
+  [2,"He","Helium",4.0026,"noble",18,1,"1s²",null,0.95,4.222,0.0001785,"Pierre Janssen",1868,"A noble gas first detected in the Sun's spectrum during a solar eclipse, hence the name from Helios. Inert, colourless, and the second most abundant element in the universe."],
+  [3,"Li","Lithium",6.94,"alkali",1,2,"[He] 2s¹",0.98,453.65,1603,0.534,"Johan August Arfwedson",1817,"The lightest metal, soft enough to cut with a knife. Essential to modern rechargeable batteries and a long-standing treatment in psychiatric medicine."],
+  [4,"Be","Beryllium",9.0122,"alkaline",2,2,"[He] 2s²",1.57,1560,2742,1.85,"Louis Nicolas Vauquelin",1798,"A rare, light, steel-grey metal. Used in aerospace and X-ray windows, but its dust is highly toxic to the lungs."],
+  [5,"B","Boron",10.81,"metalloid",13,2,"[He] 2s² 2p¹",2.04,2349,4200,2.34,"Joseph Louis Gay-Lussac",1808,"A metalloid essential to plant life and central to borosilicate glass (Pyrex). Compounds include borax and boric acid."],
+  [6,"C","Carbon",12.011,"nonmetal",14,2,"[He] 2s² 2p²",2.55,3823,4098,2.267,"Ancient",-3750,"The backbone of all known life. Appears as diamond, graphite, graphene, and fullerenes. Its bonding versatility makes organic chemistry possible."],
+  [7,"N","Nitrogen",14.007,"nonmetal",15,2,"[He] 2s² 2p³",3.04,63.15,77.355,0.0012506,"Daniel Rutherford",1772,"Comprises 78% of Earth's atmosphere. Inert as N₂, but its compounds drive both fertilisers and explosives."],
+  [8,"O","Oxygen",15.999,"nonmetal",16,2,"[He] 2s² 2p⁴",3.44,54.36,90.188,0.001429,"Carl Wilhelm Scheele",1771,"Essential to respiration and combustion, oxygen makes up 21% of our atmosphere and nearly half of Earth's crust by mass."],
+  [9,"F","Fluorine",18.998,"halogen",17,2,"[He] 2s² 2p⁵",3.98,53.48,85.03,0.001696,"Henri Moissan",1886,"The most reactive and electronegative element. Pale yellow gas that attacks nearly anything it touches; essential to Teflon and toothpaste."],
+  [10,"Ne","Neon",20.180,"noble",18,2,"[He] 2s² 2p⁶",null,24.56,27.104,0.0008999,"William Ramsay",1898,"A noble gas famous for its red-orange glow in discharge tubes — the colour of vintage signs in twentieth-century cities."],
+  [11,"Na","Sodium",22.990,"alkali",1,3,"[Ne] 3s¹",0.93,370.944,1156.09,0.971,"Humphry Davy",1807,"A soft, silver-white alkali metal that reacts violently with water. Combines with chlorine to make common salt."],
+  [12,"Mg","Magnesium",24.305,"alkaline",2,3,"[Ne] 3s²",1.31,923,1363,1.738,"Joseph Black",1755,"A light structural metal that burns with brilliant white flame. Central to chlorophyll and human metabolism."],
+  [13,"Al","Aluminium",26.982,"post-transition",13,3,"[Ne] 3s² 3p¹",1.61,933.47,2743,2.70,"Hans Christian Ørsted",1825,"Earth's most abundant metal, yet so difficult to extract that it was once more valuable than gold. Now ubiquitous in cans and aircraft."],
+  [14,"Si","Silicon",28.085,"metalloid",14,3,"[Ne] 3s² 3p²",1.90,1687,3538,2.3296,"Jöns Jakob Berzelius",1824,"The semiconductor that built the digital age. Second most abundant element in Earth's crust, primarily as silica and silicates."],
+  [15,"P","Phosphorus",30.974,"nonmetal",15,3,"[Ne] 3s² 3p³",2.19,317.3,553.65,1.82,"Hennig Brand",1669,"Discovered by an alchemist boiling urine in search of gold. White phosphorus glows in the dark and ignites in air; essential to DNA and ATP."],
+  [16,"S","Sulfur",32.06,"nonmetal",16,3,"[Ne] 3s² 3p⁴",2.58,388.36,717.8,2.067,"Ancient",-2000,"The biblical brimstone. A bright yellow nonmetal known since antiquity, central to gunpowder, vulcanised rubber, and sulphuric acid."],
+  [17,"Cl","Chlorine",35.45,"halogen",17,3,"[Ne] 3s² 3p⁵",3.16,171.6,239.11,0.003214,"Carl Wilhelm Scheele",1774,"A pale green, choking gas. Used as a chemical weapon in WWI; today it disinfects water supplies and forms table salt with sodium."],
+  [18,"Ar","Argon",39.95,"noble",18,3,"[Ne] 3s² 3p⁶",null,83.81,87.302,0.0017837,"Lord Rayleigh",1894,"The most abundant noble gas in Earth's atmosphere at nearly 1%. Used to fill incandescent bulbs and shield welding arcs."],
+  [19,"K","Potassium",39.098,"alkali",1,4,"[Ar] 4s¹",0.82,336.7,1032,0.862,"Humphry Davy",1807,"A soft alkali metal essential to plant growth and human nerve function. Reacts vigorously with water, often igniting."],
+  [20,"Ca","Calcium",40.078,"alkaline",2,4,"[Ar] 4s²",1.00,1115,1757,1.54,"Humphry Davy",1808,"The structural element of bone and shell. Limestone, marble, and chalk are all calcium carbonate."],
+  [21,"Sc","Scandium",44.956,"transition",3,4,"[Ar] 3d¹ 4s²",1.36,1814,3109,2.989,"Lars Fredrik Nilson",1879,"A rare transition metal predicted by Mendeleev as 'eka-boron' before its discovery confirmed his table's predictive power."],
+  [22,"Ti","Titanium",47.867,"transition",4,4,"[Ar] 3d² 4s²",1.54,1941,3560,4.506,"William Gregor",1791,"A strong, light, corrosion-resistant metal. Used in aerospace, medical implants, and white pigment (titanium dioxide)."],
+  [23,"V","Vanadium",50.942,"transition",5,4,"[Ar] 3d³ 4s²",1.63,2183,3680,6.0,"Andrés Manuel del Río",1801,"Named for the Norse goddess Vanadís. Adds strength to steel and forms vivid coloured compounds across multiple oxidation states."],
+  [24,"Cr","Chromium",51.996,"transition",6,4,"[Ar] 3d⁵ 4s¹",1.66,2180,2944,7.15,"Louis Nicolas Vauquelin",1797,"Source of chrome plating and stainless steel's corrosion resistance. Its name derives from the Greek for colour, owing to its vivid compounds."],
+  [25,"Mn","Manganese",54.938,"transition",7,4,"[Ar] 3d⁵ 4s²",1.55,1519,2334,7.21,"Johan Gottlieb Gahn",1774,"Essential to steel production and human enzymes. Manganese nodules carpet portions of the deep ocean floor."],
+  [26,"Fe","Iron",55.845,"transition",8,4,"[Ar] 3d⁶ 4s²",1.83,1811,3134,7.874,"Ancient",-5000,"The metal that defined an age. Forms Earth's molten core and the haemoglobin in our blood. The most common element on Earth by mass."],
+  [27,"Co","Cobalt",58.933,"transition",9,4,"[Ar] 3d⁷ 4s²",1.88,1768,3200,8.90,"Georg Brandt",1735,"Source of deep blue glass and ceramic glazes for centuries. Essential to vitamin B₁₂ and modern lithium-ion batteries."],
+  [28,"Ni","Nickel",58.693,"transition",10,4,"[Ar] 3d⁸ 4s²",1.91,1728,3003,8.908,"Axel Fredrik Cronstedt",1751,"A silvery transition metal central to stainless steel and rechargeable batteries. Coins, magnets, and meteorites are common sources."],
+  [29,"Cu","Copper",63.546,"transition",11,4,"[Ar] 3d¹⁰ 4s¹",1.90,1357.77,2835,8.96,"Ancient",-9000,"Among the first metals worked by humans. Excellent conductor of heat and electricity; alloys with tin to form bronze."],
+  [30,"Zn","Zinc",65.38,"transition",12,4,"[Ar] 3d¹⁰ 4s²",1.65,692.68,1180,7.14,"Andreas Sigismund Marggraf",1746,"Galvanises steel against rust. Essential trace nutrient for immune function. Alloys with copper to form brass."],
+  [31,"Ga","Gallium",69.723,"post-transition",13,4,"[Ar] 3d¹⁰ 4s² 4p¹",1.81,302.9146,2673,5.91,"Lecoq de Boisbaudran",1875,"Famously melts in your hand at 30°C. Predicted by Mendeleev as 'eka-aluminium'; today essential to LEDs and semiconductors."],
+  [32,"Ge","Germanium",72.630,"metalloid",14,4,"[Ar] 3d¹⁰ 4s² 4p²",2.01,1211.40,3106,5.323,"Clemens Winkler",1886,"A grey-white metalloid predicted by Mendeleev as 'eka-silicon'. Used in fibre optics and infrared optics."],
+  [33,"As","Arsenic",74.922,"metalloid",15,4,"[Ar] 3d¹⁰ 4s² 4p³",2.18,1090,887,5.727,"Albertus Magnus",1250,"Notorious for its toxicity and history as a poison. Used in semiconductors and historically in pigments and pesticides."],
+  [34,"Se","Selenium",78.971,"nonmetal",16,4,"[Ar] 3d¹⁰ 4s² 4p⁴",2.55,494,958,4.81,"Jöns Jakob Berzelius",1817,"Named for Selene, the Moon. A trace nutrient essential to thyroid function; its conductivity changes with light, enabling early photocopiers."],
+  [35,"Br","Bromine",79.904,"halogen",17,4,"[Ar] 3d¹⁰ 4s² 4p⁵",2.96,265.8,332.0,3.1028,"Antoine Jérôme Balard",1826,"One of only two elements liquid at room temperature. Reddish-brown, corrosive, and named from the Greek for stench."],
+  [36,"Kr","Krypton",83.798,"noble",18,4,"[Ar] 3d¹⁰ 4s² 4p⁶",3.00,115.78,119.93,0.003733,"William Ramsay",1898,"A noble gas used in high-performance lighting and once defined the metre via its emission spectrum."],
+  [37,"Rb","Rubidium",85.468,"alkali",1,5,"[Kr] 5s¹",0.82,312.45,961,1.532,"Robert Bunsen",1861,"A soft, silvery alkali metal that ignites in air. Used in atomic clocks and certain forms of laser cooling research."],
+  [38,"Sr","Strontium",87.62,"alkaline",2,5,"[Kr] 5s²",0.95,1050,1655,2.64,"William Cruickshank",1787,"Gives fireworks their crimson red colour. Strontium-90 is a hazardous fallout product from nuclear weapons."],
+  [39,"Y","Yttrium",88.906,"transition",3,5,"[Kr] 4d¹ 5s²",1.22,1799,3203,4.472,"Johan Gadolin",1794,"Named for the Swedish village of Ytterby, which has lent its name to four elements. Used in red phosphors and superconductors."],
+  [40,"Zr","Zirconium",91.224,"transition",4,5,"[Kr] 4d² 5s²",1.33,2128,4682,6.52,"Martin Heinrich Klaproth",1789,"Highly resistant to corrosion. Essential to nuclear reactor cladding and the gemstone cubic zirconia."],
+  [41,"Nb","Niobium",92.906,"transition",5,5,"[Kr] 4d⁴ 5s¹",1.6,2750,5017,8.57,"Charles Hatchett",1801,"Named for Niobe, daughter of Tantalus. Used in superconducting magnets and high-strength steel alloys."],
+  [42,"Mo","Molybdenum",95.95,"transition",6,5,"[Kr] 4d⁵ 5s¹",2.16,2896,4912,10.28,"Carl Wilhelm Scheele",1781,"A high-melting refractory metal that strengthens steel alloys. Essential trace nutrient in nitrogen-fixing enzymes."],
+  [43,"Tc","Technetium",98,"transition",7,5,"[Kr] 4d⁵ 5s²",1.9,2430,4538,11,"Carlo Perrier",1937,"The first artificially produced element. All its isotopes are radioactive; widely used in medical imaging."],
+  [44,"Ru","Ruthenium",101.07,"transition",8,5,"[Kr] 4d⁷ 5s¹",2.2,2607,4423,12.45,"Karl Ernst Claus",1844,"A platinum-group metal that hardens platinum and palladium alloys. Used in electrical contacts and chemotherapy drugs."],
+  [45,"Rh","Rhodium",102.91,"transition",9,5,"[Kr] 4d⁸ 5s¹",2.28,2237,3968,12.41,"William Hyde Wollaston",1804,"One of the rarest and most expensive metals on Earth. Catalytic converters consume the bulk of global production."],
+  [46,"Pd","Palladium",106.42,"transition",10,5,"[Kr] 4d¹⁰",2.20,1828.05,3236,12.023,"William Hyde Wollaston",1803,"Named for the asteroid Pallas. A platinum-group metal central to catalytic converters and hydrogen storage."],
+  [47,"Ag","Silver",107.87,"transition",11,5,"[Kr] 4d¹⁰ 5s¹",1.93,1234.93,2435,10.49,"Ancient",-5000,"The most reflective metal and best electrical conductor known. Long valued in coinage, jewellery, and photography."],
+  [48,"Cd","Cadmium",112.41,"transition",12,5,"[Kr] 4d¹⁰ 5s²",1.69,594.22,1040,8.65,"Friedrich Stromeyer",1817,"A toxic heavy metal used historically in yellow pigments and now mostly in rechargeable batteries (NiCd)."],
+  [49,"In","Indium",114.82,"post-transition",13,5,"[Kr] 4d¹⁰ 5s² 5p¹",1.78,429.7485,2345,7.31,"Ferdinand Reich",1863,"A soft, silvery metal whose oxide gives touchscreens their transparent conductivity (indium tin oxide)."],
+  [50,"Sn","Tin",118.71,"post-transition",14,5,"[Kr] 4d¹⁰ 5s² 5p²",1.96,505.08,2875,7.265,"Ancient",-3500,"Alloyed with copper to form bronze, ushering in the Bronze Age. Plates steel cans to prevent rust."],
+  [51,"Sb","Antimony",121.76,"metalloid",15,5,"[Kr] 4d¹⁰ 5s² 5p³",2.05,903.78,1908,6.685,"Ancient",-3000,"Used as kohl eyeliner in antiquity and later in printing-press type alloys. A semiconductor and flame retardant."],
+  [52,"Te","Tellurium",127.60,"metalloid",16,5,"[Kr] 4d¹⁰ 5s² 5p⁴",2.1,722.66,1261,6.232,"Franz-Joseph Müller",1782,"Named from Tellus, the Latin for Earth. Used in solar panels and to improve the machinability of steel."],
+  [53,"I","Iodine",126.90,"halogen",17,5,"[Kr] 4d¹⁰ 5s² 5p⁵",2.66,386.85,457.4,4.933,"Bernard Courtois",1811,"A purple-black solid that sublimates into violet vapour. Essential to thyroid hormones; common antiseptic."],
+  [54,"Xe","Xenon",131.29,"noble",18,5,"[Kr] 4d¹⁰ 5s² 5p⁶",2.6,161.40,165.051,0.005887,"William Ramsay",1898,"Once thought wholly inert, xenon was the first noble gas shown to form true compounds. Used in high-intensity lamps and ion thrusters."],
+  [55,"Cs","Caesium",132.91,"alkali",1,6,"[Xe] 6s¹",0.79,301.7,944,1.93,"Robert Bunsen",1860,"Among the most reactive metals; melts just above room temperature. The second-based atomic clock is defined by caesium-133."],
+  [56,"Ba","Barium",137.33,"alkaline",2,6,"[Xe] 6s²",0.89,1000,2118,3.51,"Humphry Davy",1808,"Gives fireworks their green colour. Barium sulphate is opaque to X-rays and used as a contrast medium for medical imaging."],
+  [57,"La","Lanthanum",138.91,"lanthanide",3,6,"[Xe] 5d¹ 6s²",1.10,1193,3737,6.162,"Carl Gustaf Mosander",1839,"Namesake of the lanthanide series. Used in carbon arc lamps, hybrid car batteries, and high-quality optical glass."],
+  [58,"Ce","Cerium",140.12,"lanthanide",null,6,"[Xe] 4f¹ 5d¹ 6s²",1.12,1068,3716,6.770,"Jöns Jakob Berzelius",1803,"Named after the dwarf planet Ceres. The most abundant rare earth element; used in catalytic converters and lighter flints."],
+  [59,"Pr","Praseodymium",140.91,"lanthanide",null,6,"[Xe] 4f³ 6s²",1.13,1208,3793,6.77,"Carl Auer von Welsbach",1885,"Greek for 'green twin'. Used to colour glass and ceramics yellow-green; combined with neodymium in powerful magnets."],
+  [60,"Nd","Neodymium",144.24,"lanthanide",null,6,"[Xe] 4f⁴ 6s²",1.14,1297,3347,7.01,"Carl Auer von Welsbach",1885,"Source of the most powerful permanent magnets known, found in headphones, hard drives, and wind turbines."],
+  [61,"Pm","Promethium",145,"lanthanide",null,6,"[Xe] 4f⁵ 6s²",1.13,1315,3273,7.26,"Charles D. Coryell",1945,"Named for Prometheus. The only radioactive lanthanide; once used in glow-in-the-dark watch dials."],
+  [62,"Sm","Samarium",150.36,"lanthanide",null,6,"[Xe] 4f⁶ 6s²",1.17,1345,2067,7.52,"Lecoq de Boisbaudran",1879,"Used in samarium-cobalt magnets that withstand high temperatures. The first element named after a person (the mineral discoverer Samarsky)."],
+  [63,"Eu","Europium",151.96,"lanthanide",null,6,"[Xe] 4f⁷ 6s²",1.2,1099,1802,5.244,"Eugène-Anatole Demarçay",1901,"Named for Europe. Provides the red phosphor in colour television and the blue in fluorescent bulbs; key anti-counterfeiting marker in euro banknotes."],
+  [64,"Gd","Gadolinium",157.25,"lanthanide",null,6,"[Xe] 4f⁷ 5d¹ 6s²",1.20,1585,3546,7.90,"Jean Charles Galissard",1880,"Strongly paramagnetic; used as a contrast agent in MRI scans and in nuclear reactor control rods."],
+  [65,"Tb","Terbium",158.93,"lanthanide",null,6,"[Xe] 4f⁹ 6s²",1.2,1629,3503,8.23,"Carl Gustaf Mosander",1843,"Another element named for Ytterby, Sweden. Used in green phosphors for displays and in solid-state devices that change shape in magnetic fields."],
+  [66,"Dy","Dysprosium",162.50,"lanthanide",null,6,"[Xe] 4f¹⁰ 6s²",1.22,1680,2840,8.540,"Lecoq de Boisbaudran",1886,"Greek for 'hard to obtain'. Critical to high-temperature magnets in electric vehicles and wind turbines."],
+  [67,"Ho","Holmium",164.93,"lanthanide",null,6,"[Xe] 4f¹¹ 6s²",1.23,1734,2993,8.79,"Per Teodor Cleve",1878,"Has the highest magnetic permeability of any element. Used in the strongest artificial magnetic fields and in solid-state lasers."],
+  [68,"Er","Erbium",167.26,"lanthanide",null,6,"[Xe] 4f¹² 6s²",1.24,1802,3141,9.066,"Carl Gustaf Mosander",1843,"Erbium-doped fibre amplifiers boost signals across the world's undersea cables, making the modern internet possible."],
+  [69,"Tm","Thulium",168.93,"lanthanide",null,6,"[Xe] 4f¹³ 6s²",1.25,1818,2223,9.32,"Per Teodor Cleve",1879,"The least abundant naturally occurring lanthanide. Used in portable X-ray devices and high-power lasers."],
+  [70,"Yb","Ytterbium",173.05,"lanthanide",null,6,"[Xe] 4f¹⁴ 6s²",1.1,1097,1469,6.90,"Jean Charles Galissard",1878,"The fourth and final element named after Ytterby, Sweden. Used in atomic clocks of extraordinary precision."],
+  [71,"Lu","Lutetium",174.97,"lanthanide",3,6,"[Xe] 4f¹⁴ 5d¹ 6s²",1.27,1925,3675,9.841,"Carl Auer von Welsbach",1906,"Named for Lutetia, the Roman name for Paris. The hardest, densest, and rarest of the lanthanides."],
+  [72,"Hf","Hafnium",178.49,"transition",4,6,"[Xe] 4f¹⁴ 5d² 6s²",1.3,2506,4876,13.31,"Dirk Coster",1923,"Named for Copenhagen (Hafnia). Crucial in nuclear reactor control rods due to its high neutron absorption."],
+  [73,"Ta","Tantalum",180.95,"transition",5,6,"[Xe] 4f¹⁴ 5d³ 6s²",1.5,3290,5731,16.69,"Anders Gustaf Ekeberg",1802,"Named for Tantalus of Greek myth. Used in capacitors throughout consumer electronics; a major component of mobile phones."],
+  [74,"W","Tungsten",183.84,"transition",6,6,"[Xe] 4f¹⁴ 5d⁴ 6s²",2.36,3695,6203,19.25,"Juan José Elhuyar",1783,"Has the highest melting point of any metal. Powers incandescent bulb filaments and the cutting edges of industrial tools."],
+  [75,"Re","Rhenium",186.21,"transition",7,6,"[Xe] 4f¹⁴ 5d⁵ 6s²",1.9,3459,5869,21.02,"Walter Noddack",1925,"One of the rarest stable elements in Earth's crust. Used in jet engine turbine blades for its extreme heat resistance."],
+  [76,"Os","Osmium",190.23,"transition",8,6,"[Xe] 4f¹⁴ 5d⁶ 6s²",2.2,3306,5285,22.59,"Smithson Tennant",1803,"The densest naturally occurring element. Used in fountain pen tips, electrical contacts, and as a hardener for platinum alloys."],
+  [77,"Ir","Iridium",192.22,"transition",9,6,"[Xe] 4f¹⁴ 5d⁷ 6s²",2.20,2719,4403,22.56,"Smithson Tennant",1803,"Among the most corrosion-resistant metals known. Iridium-rich layers in geological strata mark the asteroid impact that ended the dinosaurs."],
+  [78,"Pt","Platinum",195.08,"transition",10,6,"[Xe] 4f¹⁴ 5d⁹ 6s¹",2.28,2041.4,4098,21.45,"Antonio de Ulloa",1735,"A precious silvery-white metal more valuable than gold. Catalyses chemical reactions in cars and chemotherapy drugs."],
+  [79,"Au","Gold",196.97,"transition",11,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s¹",2.54,1337.33,3243,19.3,"Ancient",-6000,"The metal of monarchs, currency, and circuit boards. Highly malleable and one of the few elements found pure in nature."],
+  [80,"Hg","Mercury",200.59,"transition",12,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s²",2.00,234.321,629.88,13.534,"Ancient",-1500,"The only metal liquid at room temperature. Once used in thermometers and barometers; now restricted due to its toxicity."],
+  [81,"Tl","Thallium",204.38,"post-transition",13,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹",1.62,577,1746,11.85,"William Crookes",1861,"A soft, highly toxic metal favoured historically by poisoners. Used today in specialised glass and infrared detectors."],
+  [82,"Pb","Lead",207.2,"post-transition",14,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²",2.33,600.61,2022,11.34,"Ancient",-7000,"The dense, soft metal of Roman plumbing (whence the name plumbing). Toxic and now removed from petrol, paint, and pipes wherever possible."],
+  [83,"Bi","Bismuth",208.98,"post-transition",15,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³",2.02,544.7,1837,9.78,"Ancient",-1500,"Forms iridescent, geometric crystals. Used in cosmetics, low-melting alloys, and Pepto-Bismol."],
+  [84,"Po","Polonium",209,"post-transition",16,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴",2.0,527,1235,9.196,"Marie Curie",1898,"Named by Marie Curie for her native Poland. Intensely radioactive; infamous as the agent in the 2006 poisoning of Alexander Litvinenko."],
+  [85,"At","Astatine",210,"halogen",17,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵",2.2,575,610,6.35,"Dale R. Corson",1940,"The rarest naturally occurring element on Earth — only fractions of a gram exist in the entire crust. All isotopes are radioactive."],
+  [86,"Rn","Radon",222,"noble",18,6,"[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶",null,202,211.5,0.00973,"Friedrich Ernst Dorn",1900,"A radioactive noble gas seeping from uranium-bearing rocks. A leading cause of lung cancer in non-smokers."],
+  [87,"Fr","Francium",223,"alkali",1,7,"[Rn] 7s¹",0.7,300,950,1.87,"Marguerite Perey",1939,"The second rarest naturally occurring element. So radioactive that no visible quantity has ever been assembled."],
+  [88,"Ra","Radium",226,"alkaline",2,7,"[Rn] 7s²",0.9,1233,2010,5.5,"Marie Curie",1898,"Discovered by the Curies. Once painted onto watch dials before its dangers were understood; the source of the original 'radioactive' branding."],
+  [89,"Ac","Actinium",227,"actinide",3,7,"[Rn] 6d¹ 7s²",1.1,1500,3471,10.0,"André-Louis Debierne",1899,"Namesake of the actinide series. Glows pale blue in the dark from its own radioactivity."],
+  [90,"Th","Thorium",232.04,"actinide",null,7,"[Rn] 6d² 7s²",1.3,2023,5061,11.7,"Jöns Jakob Berzelius",1828,"Named for the Norse god Thor. A potential nuclear fuel three times more abundant than uranium."],
+  [91,"Pa","Protactinium",231.04,"actinide",null,7,"[Rn] 5f² 6d¹ 7s²",1.5,1841,4300,15.37,"Otto Hahn",1913,"One of the rarest and costliest naturally occurring elements. Highly toxic and intensely radioactive."],
+  [92,"U","Uranium",238.03,"actinide",null,7,"[Rn] 5f³ 6d¹ 7s²",1.38,1405.3,4404,19.1,"Martin Heinrich Klaproth",1789,"Named for the planet Uranus, discovered eight years earlier. Powers nuclear reactors and atomic weapons; once used to colour glass."],
+  [93,"Np","Neptunium",237,"actinide",null,7,"[Rn] 5f⁴ 6d¹ 7s²",1.36,917,4273,20.45,"Edwin McMillan",1940,"The first transuranium element produced. Named for Neptune, the planet beyond Uranus."],
+  [94,"Pu","Plutonium",244,"actinide",null,7,"[Rn] 5f⁶ 7s²",1.28,912.5,3505,19.85,"Glenn T. Seaborg",1940,"Named for Pluto. Created in nuclear reactors; powers space probes and the warhead of the Nagasaki bomb."],
+  [95,"Am","Americium",243,"actinide",null,7,"[Rn] 5f⁷ 7s²",1.13,1449,2880,12,"Glenn T. Seaborg",1944,"Named for the Americas. The radioactive heart of common household smoke detectors."],
+  [96,"Cm","Curium",247,"actinide",null,7,"[Rn] 5f⁷ 6d¹ 7s²",1.28,1613,3383,13.51,"Glenn T. Seaborg",1944,"Named for Marie and Pierre Curie. Powers some spacecraft and supplies energy to scientific instruments on Mars rovers."],
+  [97,"Bk","Berkelium",247,"actinide",null,7,"[Rn] 5f⁹ 7s²",1.3,1259,2900,14.78,"Glenn T. Seaborg",1949,"Named for Berkeley, California. Used to synthesise heavier elements in particle accelerators."],
+  [98,"Cf","Californium",251,"actinide",null,7,"[Rn] 5f¹⁰ 7s²",1.3,1173,1743,15.1,"Glenn T. Seaborg",1950,"A powerful neutron source used to start nuclear reactors and locate gold and silver ore deposits."],
+  [99,"Es","Einsteinium",252,"actinide",null,7,"[Rn] 5f¹¹ 7s²",1.3,1133,1269,8.84,"Albert Ghiorso",1952,"Discovered in fallout from the first hydrogen bomb test. Named in honour of Albert Einstein."],
+  [100,"Fm","Fermium",257,"actinide",null,7,"[Rn] 5f¹² 7s²",1.3,1800,null,9.7,"Albert Ghiorso",1952,"Last element produced by neutron capture; everything heavier requires particle accelerators. Named for Enrico Fermi."],
+  [101,"Md","Mendelevium",258,"actinide",null,7,"[Rn] 5f¹³ 7s²",1.3,1100,null,10.3,"Albert Ghiorso",1955,"Named in honour of Dmitri Mendeleev, the architect of the periodic table itself."],
+  [102,"No","Nobelium",259,"actinide",null,7,"[Rn] 5f¹⁴ 7s²",1.3,1100,null,9.9,"Albert Ghiorso",1966,"Named for Alfred Nobel. Only ever produced in trace amounts for research purposes."],
+  [103,"Lr","Lawrencium",266,"actinide",3,7,"[Rn] 5f¹⁴ 7s² 7p¹",1.3,1900,null,15.6,"Albert Ghiorso",1961,"Named for Ernest Lawrence, inventor of the cyclotron. The last actinide on the table."],
+  [104,"Rf","Rutherfordium",267,"transition",4,7,"[Rn] 5f¹⁴ 6d² 7s²",null,2400,5800,23.2,"JINR / LBNL",1964,"Named for Ernest Rutherford. The first transactinide element, with isotopes lasting only minutes."],
+  [105,"Db","Dubnium",268,"transition",5,7,"[Rn] 5f¹⁴ 6d³ 7s²",null,null,null,29.3,"JINR / LBNL",1968,"Named for Dubna, Russia, site of the Joint Institute for Nuclear Research."],
+  [106,"Sg","Seaborgium",269,"transition",6,7,"[Rn] 5f¹⁴ 6d⁴ 7s²",null,null,null,35.0,"LBNL",1974,"Named for Glenn Seaborg, the only person honoured this way during their lifetime."],
+  [107,"Bh","Bohrium",270,"transition",7,7,"[Rn] 5f¹⁴ 6d⁵ 7s²",null,null,null,37.1,"GSI",1981,"Named for Niels Bohr. Synthesised by bombarding bismuth with chromium nuclei."],
+  [108,"Hs","Hassium",269,"transition",8,7,"[Rn] 5f¹⁴ 6d⁶ 7s²",null,null,null,40.7,"GSI",1984,"Named after the German state of Hesse. One of the densest elements ever produced."],
+  [109,"Mt","Meitnerium",278,"transition",9,7,"[Rn] 5f¹⁴ 6d⁷ 7s²",null,null,null,37.4,"GSI",1982,"Named for Lise Meitner, the physicist who explained nuclear fission."],
+  [110,"Ds","Darmstadtium",281,"transition",10,7,"[Rn] 5f¹⁴ 6d⁸ 7s²",null,null,null,34.8,"GSI",1994,"Named for Darmstadt, Germany, where it was first synthesised."],
+  [111,"Rg","Roentgenium",282,"transition",11,7,"[Rn] 5f¹⁴ 6d⁹ 7s²",null,null,null,28.7,"GSI",1994,"Named for Wilhelm Röntgen, who discovered X-rays."],
+  [112,"Cn","Copernicium",285,"transition",12,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s²",null,null,357,23.7,"GSI",1996,"Named for Nicolaus Copernicus. Predicted to be a liquid at room temperature, like mercury."],
+  [113,"Nh","Nihonium",286,"post-transition",13,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p¹",null,700,1430,16,"RIKEN",2004,"The first element discovered in Asia; named for Japan (Nihon). Synthesised in Saitama Prefecture."],
+  [114,"Fl","Flerovium",289,"post-transition",14,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p²",null,340,420,14,"JINR / LLNL",1998,"Named for the Flerov Laboratory of Nuclear Reactions in Dubna."],
+  [115,"Mc","Moscovium",290,"post-transition",15,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³",null,670,1400,13.5,"JINR / LLNL",2003,"Named for the Moscow region. All isotopes are intensely radioactive with short half-lives."],
+  [116,"Lv","Livermorium",293,"post-transition",16,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴",null,709,1085,12.9,"JINR / LLNL",2000,"Named for Lawrence Livermore National Laboratory, which collaborated on its synthesis."],
+  [117,"Ts","Tennessine",294,"halogen",17,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵",null,723,883,7.2,"ORNL / JINR",2010,"Named for Tennessee, home of Oak Ridge National Laboratory. The second-heaviest known element."],
+  [118,"Og","Oganesson",294,"noble",18,7,"[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶",null,325,450,5.0,"JINR / LLNL",2002,"The heaviest known element, named for Yuri Oganessian. Despite its noble gas position, it may behave as a solid at room temperature."]
+];
+
+const CATEGORIES = {
+  "alkali": { label: "Alkali Metals", color: "var(--cat-alkali)" },
+  "alkaline": { label: "Alkaline Earth", color: "var(--cat-alkaline)" },
+  "transition": { label: "Transition Metals", color: "var(--cat-transition)" },
+  "post-transition": { label: "Post-Transition", color: "var(--cat-post-transition)" },
+  "metalloid": { label: "Metalloids", color: "var(--cat-metalloid)" },
+  "nonmetal": { label: "Nonmetals", color: "var(--cat-nonmetal)" },
+  "halogen": { label: "Halogens", color: "var(--cat-halogen)" },
+  "noble": { label: "Noble Gases", color: "var(--cat-noble)" },
+  "lanthanide": { label: "Lanthanides", color: "var(--cat-lanthanide)" },
+  "actinide": { label: "Actinides", color: "var(--cat-actinide)" }
+};
+
+// Supplemental data, keyed by atomic number.
+// [empirical_radius_pm, abundance_mg_per_kg, state_at_RT, radioactive]
+// state values: 'solid' | 'liquid' | 'gas'
+//   (synthetic elements have their actual or best-predicted phase here;
+//    the synthetic flag itself lives in ELEMENT_SYNTHETIC below)
+// abundance: mg/kg in Earth's crust (synthetic/very rare → null)
+const ELEMENT_EXTRA = {
+  1:  [25,    1400,    'gas',       false],
+  2:  [120,   0.008,   'gas',       false],
+  3:  [145,   20,      'solid',     false],
+  4:  [105,   2.8,     'solid',     false],
+  5:  [85,    10,      'solid',     false],
+  6:  [70,    200,     'solid',     false],
+  7:  [65,    19,      'gas',       false],
+  8:  [60,    461000,  'gas',       false],
+  9:  [50,    585,     'gas',       false],
+  10: [160,   0.005,   'gas',       false],
+  11: [180,   23600,   'solid',     false],
+  12: [150,   23300,   'solid',     false],
+  13: [125,   82300,   'solid',     false],
+  14: [110,   282000,  'solid',     false],
+  15: [100,   1050,    'solid',     false],
+  16: [100,   350,     'solid',     false],
+  17: [100,   145,     'gas',       false],
+  18: [71,    3.5,     'gas',       false],
+  19: [220,   20900,   'solid',     false],
+  20: [180,   41500,   'solid',     false],
+  21: [160,   22,      'solid',     false],
+  22: [140,   5650,    'solid',     false],
+  23: [135,   120,     'solid',     false],
+  24: [140,   102,     'solid',     false],
+  25: [140,   950,     'solid',     false],
+  26: [140,   56300,   'solid',     false],
+  27: [135,   25,      'solid',     false],
+  28: [135,   84,      'solid',     false],
+  29: [135,   60,      'solid',     false],
+  30: [135,   70,      'solid',     false],
+  31: [130,   19,      'solid',     false],
+  32: [125,   1.5,     'solid',     false],
+  33: [115,   1.8,     'solid',     false],
+  34: [115,   0.05,    'solid',     false],
+  35: [115,   2.4,     'liquid',    false],
+  36: [88,    0.0001,  'gas',       false],
+  37: [235,   90,      'solid',     false],
+  38: [200,   370,     'solid',     false],
+  39: [180,   33,      'solid',     false],
+  40: [155,   165,     'solid',     false],
+  41: [145,   20,      'solid',     false],
+  42: [145,   1.2,     'solid',     false],
+  43: [135,   null,    'solid',     true],
+  44: [130,   0.001,   'solid',     false],
+  45: [135,   0.001,   'solid',     false],
+  46: [140,   0.015,   'solid',     false],
+  47: [160,   0.075,   'solid',     false],
+  48: [155,   0.15,    'solid',     false],
+  49: [155,   0.25,    'solid',     false],
+  50: [145,   2.3,     'solid',     false],
+  51: [145,   0.2,     'solid',     false],
+  52: [140,   0.001,   'solid',     false],
+  53: [140,   0.45,    'solid',     false],
+  54: [108,   0.00003, 'gas',       false],
+  55: [260,   3,       'solid',     false],
+  56: [215,   425,     'solid',     false],
+  57: [195,   39,      'solid',     false],
+  58: [185,   66.5,    'solid',     false],
+  59: [185,   9.2,     'solid',     false],
+  60: [185,   41.5,    'solid',     false],
+  61: [185,   null,    'solid',     true],
+  62: [185,   7.05,    'solid',     false],
+  63: [185,   2,       'solid',     false],
+  64: [180,   6.2,     'solid',     false],
+  65: [175,   1.2,     'solid',     false],
+  66: [175,   5.2,     'solid',     false],
+  67: [175,   1.3,     'solid',     false],
+  68: [175,   3.5,     'solid',     false],
+  69: [175,   0.52,    'solid',     false],
+  70: [175,   3.2,     'solid',     false],
+  71: [175,   0.8,     'solid',     false],
+  72: [155,   3,       'solid',     false],
+  73: [145,   2,       'solid',     false],
+  74: [135,   1.25,    'solid',     false],
+  75: [135,   0.0007,  'solid',     false],
+  76: [130,   0.0015,  'solid',     false],
+  77: [135,   0.001,   'solid',     false],
+  78: [135,   0.005,   'solid',     false],
+  79: [135,   0.004,   'solid',     false],
+  80: [150,   0.085,   'liquid',    false],
+  81: [190,   0.85,    'solid',     false],
+  82: [180,   14,      'solid',     false],
+  83: [160,   0.009,   'solid',     true],
+  84: [190,   0.0000000000001, 'solid', true],
+  85: [127,   null,    'solid',     true],
+  86: [120,   0.0000000000004, 'gas', true],
+  87: [260,   null,    'solid',     true],
+  88: [215,   0.0000009, 'solid',   true],
+  89: [195,   null,    'solid',     true],
+  90: [180,   9.6,     'solid',     true],
+  91: [180,   0.0000014, 'solid',   true],
+  92: [175,   2.7,     'solid',     true],
+  93: [175,   null,    'solid',     true],
+  94: [175,   null,    'solid',     true],
+  95: [175,   null,    'solid',     true],
+  96: [176,   null,    'solid',     true],
+  97: [175,   null,    'solid',     true],
+  98: [175,   null,    'solid',     true],
+  99: [175,   null,    'solid',     true],
+  100: [175,  null,    'solid',     true],
+  101: [175,  null,    'solid',     true],
+  102: [175,  null,    'solid',     true],
+  103: [175,  null,    'solid',     true],
+  104: [157,  null,    'solid',     true],
+  105: [149,  null,    'solid',     true],
+  106: [143,  null,    'solid',     true],
+  107: [141,  null,    'solid',     true],
+  108: [134,  null,    'solid',     true],
+  109: [129,  null,    'solid',     true],
+  110: [128,  null,    'solid',     true],
+  111: [121,  null,    'solid',     true],
+  112: [122,  null,    'solid',     true],
+  113: [136,  null,    'solid',     true],
+  114: [143,  null,    'solid',     true],
+  115: [162,  null,    'solid',     true],
+  116: [175,  null,    'solid',     true],
+  117: [165,  null,    'solid',     true],
+  118: [157,  null,    'gas',       true]
+};
+
+// Synthetic elements — those that don't occur naturally in measurable
+// quantities and are produced only in particle accelerators or reactors.
+// Kept as a separate Set (not a tuple slot) so the synthetic flag is
+// orthogonal to physical state in both the data model and the UI: an
+// element can be "solid + synthetic" (e.g. technetium) or just "solid"
+// (e.g. iron) without conflating the two dimensions.
+//
+// Phases for elements past 111 are theoretical predictions — most of these
+// nuclei decay within seconds, so direct measurement is impossible. The
+// values used in ELEMENT_EXTRA reflect the conventional Aufbau-based
+// textbook predictions; recent relativistic-effects research suggests some
+// (notably Cn, Fl, Og) may behave differently, but consensus is unsettled.
+const ELEMENT_SYNTHETIC = new Set([
+  43, 61,
+  93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103,
+  104, 105, 106, 107, 108, 109, 110, 111, 112,
+  113, 114, 115, 116, 117, 118
+]);
+
+// Nucleosynthetic origin — where each element was forged in the cosmos.
+// Categorization follows the standard astrophysical breakdown commonly used in
+// origin-of-the-elements periodic tables. Each element is assigned its *dominant*
+// production source; reality is messier (most elements are made via multiple
+// pathways) but this is the textbook simplification.
+//
+// Process keys:
+//   bigbang    — Big Bang nucleosynthesis (first ~20 min after the Big Bang)
+//   cosmicray  — Cosmic ray spallation (cosmic rays hitting heavier nuclei)
+//   smallstars — Fusion in low-to-intermediate mass stars (incl. AGB s-process)
+//   bigstars   — Fusion in massive stars (up through iron peak)
+//   supernova  — Exploding massive stars (core-collapse supernovae)
+//   merger     — Neutron star mergers (heavy r-process elements)
+//   synthetic  — Human-made in reactors / accelerators
+const ELEMENT_ORIGIN = {
+  1: 'bigbang', 2: 'bigbang',
+  3: 'bigbang',  // also cosmicray contribution
+  4: 'cosmicray', 5: 'cosmicray',
+  6: 'smallstars', 7: 'smallstars', 8: 'smallstars', 9: 'smallstars',
+  10: 'smallstars', 11: 'smallstars', 12: 'smallstars',
+  13: 'bigstars', 14: 'bigstars', 15: 'bigstars', 16: 'bigstars',
+  17: 'bigstars', 18: 'bigstars', 19: 'bigstars', 20: 'bigstars',
+  21: 'supernova', 22: 'bigstars', 23: 'supernova',
+  24: 'bigstars', 25: 'supernova', 26: 'bigstars',
+  27: 'supernova', 28: 'bigstars',
+  29: 'supernova', 30: 'supernova',
+  31: 'supernova', 32: 'smallstars', 33: 'supernova',
+  34: 'smallstars', 35: 'supernova', 36: 'smallstars',
+  37: 'supernova', 38: 'smallstars', 39: 'supernova',
+  40: 'smallstars', 41: 'supernova', 42: 'smallstars',
+  43: 'synthetic', 44: 'supernova', 45: 'supernova',
+  46: 'smallstars', 47: 'supernova', 48: 'smallstars',
+  49: 'supernova', 50: 'smallstars', 51: 'supernova',
+  52: 'smallstars', 53: 'supernova', 54: 'smallstars',
+  55: 'supernova', 56: 'smallstars',
+  57: 'smallstars', 58: 'smallstars', 59: 'smallstars',
+  60: 'smallstars', 61: 'synthetic', 62: 'smallstars',
+  63: 'merger', 64: 'merger', 65: 'merger',
+  66: 'merger', 67: 'merger', 68: 'merger',
+  69: 'merger', 70: 'merger', 71: 'merger',
+  72: 'smallstars', 73: 'supernova', 74: 'smallstars',
+  75: 'supernova', 76: 'merger', 77: 'merger',
+  78: 'merger', 79: 'merger', 80: 'merger',
+  81: 'supernova', 82: 'smallstars', 83: 'merger',
+  84: 'merger', 85: 'merger', 86: 'merger',
+  87: 'merger', 88: 'merger', 89: 'merger',
+  90: 'merger', 91: 'merger', 92: 'merger',
+  93: 'synthetic', 94: 'synthetic', 95: 'synthetic',
+  96: 'synthetic', 97: 'synthetic', 98: 'synthetic',
+  99: 'synthetic', 100: 'synthetic', 101: 'synthetic',
+  102: 'synthetic', 103: 'synthetic', 104: 'synthetic',
+  105: 'synthetic', 106: 'synthetic', 107: 'synthetic',
+  108: 'synthetic', 109: 'synthetic', 110: 'synthetic',
+  111: 'synthetic', 112: 'synthetic', 113: 'synthetic',
+  114: 'synthetic', 115: 'synthetic', 116: 'synthetic',
+  117: 'synthetic', 118: 'synthetic'
+};
+
+// Display config for stardust origin chips — order matters (this is the
+// chronological/cosmological order: Big Bang → modern lab).
+const ORIGIN_CONFIG = [
+  { key: 'bigbang',    label: 'Big Bang',          short: 'Big Bang' },
+  { key: 'cosmicray',  label: 'Cosmic Rays',       short: 'Cosmic' },
+  { key: 'smallstars', label: 'Small Stars',       short: 'Small' },
+  { key: 'bigstars',   label: 'Massive Stars',     short: 'Massive' },
+  { key: 'supernova',  label: 'Supernovae',        short: 'Supernova' },
+  { key: 'merger',     label: 'Neutron Mergers',   short: 'Merger' },
+  { key: 'synthetic',  label: 'Human-Made',        short: 'Lab' }
+];
+
+// Build the layout grid
+function buildTable() {
+  const table = document.getElementById('table');
+  const ELEMENT_BY_NUMBER = {};
+  ELEMENTS.forEach(e => ELEMENT_BY_NUMBER[e[0]] = e);
+
+  // Standard periodic table layout (period x group => atomic number, or null/series)
+  // 7 periods, 18 groups
+  const LAYOUT = [
+    [1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,2],
+    [3,4,null,null,null,null,null,null,null,null,null,null,5,6,7,8,9,10],
+    [11,12,null,null,null,null,null,null,null,null,null,null,13,14,15,16,17,18],
+    [19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36],
+    [37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54],
+    [55,56,'La-Lu',72,73,74,75,76,77,78,79,80,81,82,83,84,85,86],
+    [87,88,'Ac-Lr',104,105,106,107,108,109,110,111,112,113,114,115,116,117,118]
+  ];
+
+  LAYOUT.forEach(row => {
+    row.forEach(cell => {
+      if (cell === null) {
+        const ph = document.createElement('div');
+        ph.className = 'element placeholder';
+        table.appendChild(ph);
+      } else if (typeof cell === 'string') {
+        const marker = document.createElement('div');
+        marker.className = 'series-marker';
+        marker.textContent = cell;
+        table.appendChild(marker);
+      } else {
+        const el = ELEMENT_BY_NUMBER[cell];
+        table.appendChild(createElementCell(el));
+      }
+    });
+  });
+
+  // Inject the gap-control container into the upper-gap region of the table.
+  // This is where the active filter's slider/toggles render. Hidden until a chip is selected.
+  const gapControl = document.createElement('div');
+  gapControl.className = 'gap-control';
+  gapControl.id = 'gapControl';
+  gapControl.hidden = true;
+  table.appendChild(gapControl);
+
+  // Lanthanide row (separate)
+  const lanRow = document.createElement('div');
+  lanRow.className = 'lanthanide-row';
+  // Empty cells for groups 1-2, then lanthanides 57-71 in groups 3-17, then nothing
+  for (let i = 0; i < 2; i++) {
+    const ph = document.createElement('div');
+    ph.className = 'element placeholder';
+    lanRow.appendChild(ph);
+  }
+  // Marker
+  const lanMarker = document.createElement('div');
+  lanMarker.className = 'series-marker';
+  lanMarker.textContent = '6';
+  lanMarker.style.fontStyle = 'normal';
+  lanRow.appendChild(lanMarker);
+  for (let n = 57; n <= 71; n++) {
+    lanRow.appendChild(createElementCell(ELEMENT_BY_NUMBER[n]));
+  }
+  table.parentNode.insertBefore(lanRow, document.getElementById('legendBelow'));
+
+  // Actinide row
+  const actRow = document.createElement('div');
+  actRow.className = 'actinide-row';
+  for (let i = 0; i < 2; i++) {
+    const ph = document.createElement('div');
+    ph.className = 'element placeholder';
+    actRow.appendChild(ph);
+  }
+  const actMarker = document.createElement('div');
+  actMarker.className = 'series-marker';
+  actMarker.textContent = '7';
+  actMarker.style.fontStyle = 'normal';
+  actRow.appendChild(actMarker);
+  for (let n = 89; n <= 103; n++) {
+    actRow.appendChild(createElementCell(ELEMENT_BY_NUMBER[n]));
+  }
+  table.parentNode.insertBefore(actRow, document.getElementById('legendBelow'));
+}
+
+function createElementCell(data) {
+  const [number, symbol, name, mass, category] = data;
+  const cell = document.createElement('div');
+  cell.className = 'element';
+  cell.dataset.number = number;
+  cell.dataset.category = category;
+  cell.style.setProperty('--cat-color', `var(--cat-${category})`);
+
+  cell.innerHTML = `
+    <div class="number">${number}</div>
+    <div class="symbol">${symbol}</div>
+    <div class="name">${name}</div>
+    <div class="mass">${typeof mass === 'number' && mass < 300 ? mass.toFixed(mass > 100 ? 2 : 3) : mass}</div>
+  `;
+
+  cell.addEventListener('click', () => openModal(data));
+  return cell;
+}
+
+function buildLegend() {
+  const legend = document.getElementById('legend');
+  Object.entries(CATEGORIES).forEach(([key, info]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.dataset.category = key;
+    item.innerHTML = `<span class="legend-swatch" style="background:${info.color}"></span><span>${info.label}</span>`;
+    item.addEventListener('click', () => filterByCategory(key));
+    legend.appendChild(item);
+  });
+}
+
+let activeFilter = null;
+
+// Tracks which filter chip is currently expanded (showing its histogram/controls)
+const histoState = {
+  activeFilter: null    // 'year' | 'density' | 'radius' | 'abundance' | 'state' | null
+};
+
+// Slider/toggle filter state
+const sliderState = {
+  year: 100,        // 0-100, default 100 (today, no filter)
+  density: 100,     // 0-100, default 100 (max, no filter)
+  radius: 100,      // 0-100, default 100 (max, no filter)
+  abundance: 100    // 0-100 LOG scale, default 100 (right = include all)
+};
+const toggleState = {
+  states: new Set(),       // active phase chips: solid, liquid, gas (mutually exclusive — radio behaviour)
+  synthetic: false,        // synthetic-only flag (independent of phase, AND-combined)
+  radioactive: false,      // radioactive-only flag (independent of phase, AND-combined)
+  origins: new Set()       // active stardust origin chips
+};
+
+// Tracks whether the user has dismissed the empty-state overlay for the
+// current run of zero matches. Auto-clears in applyFilters() the moment the
+// match count returns to non-zero, so the overlay re-earns visibility on
+// the next zero-match combination instead of staying dismissed forever.
+let emptyStateDismissed = false;
+
+// Compute data ranges for slider mapping
+let DATA_RANGES = null;
+function computeDataRanges() {
+  const years = ELEMENTS.map(e => e[13]).filter(y => y !== null);
+  const densities = ELEMENTS.map(e => e[11]).filter(d => d !== null && !isNaN(d));
+  const radii = Object.values(ELEMENT_EXTRA).map(x => x[0]).filter(r => r !== null);
+  const abundances = Object.values(ELEMENT_EXTRA).map(x => x[1]).filter(a => a !== null && a > 0);
+
+  DATA_RANGES = {
+    yearMin: Math.min(...years),  // includes -7000 BCE
+    yearMax: 2026,
+    densityMin: Math.min(...densities),
+    densityMax: Math.max(...densities),
+    radiusMin: Math.min(...radii),
+    radiusMax: Math.max(...radii),
+    // Abundance is log-scaled
+    abundanceLogMin: Math.log10(Math.min(...abundances)),
+    abundanceLogMax: Math.log10(Math.max(...abundances))
+  };
+}
+
+function filterByCategory(cat) {
+  if (activeFilter === cat) {
+    activeFilter = null;
+  } else {
+    activeFilter = cat;
+  }
+  applyFilters();
+}
+
+// Convert slider position (0-100) to threshold values
+function getYearThreshold(pos) {
+  // pos 0 = ancient, pos 100 = today.
+  // Use a piecewise mapping so the modern era (where most discoveries happened)
+  // gets more slider resolution. First 25% covers ancient → 1700; rest covers 1700 → today.
+  const yearMin = DATA_RANGES.yearMin;
+  const yearMax = DATA_RANGES.yearMax;
+  const breakpoint = 25;
+  const breakYear = 1700;
+  if (pos <= breakpoint) {
+    return yearMin + (pos / breakpoint) * (breakYear - yearMin);
+  }
+  return breakYear + ((pos - breakpoint) / (100 - breakpoint)) * (yearMax - breakYear);
+}
+
+function getDensityThreshold(pos) {
+  // pos 0 = lightest, pos 100 = densest. Element must be ≤ threshold to show.
+  return DATA_RANGES.densityMin + (pos / 100) * (DATA_RANGES.densityMax - DATA_RANGES.densityMin);
+}
+
+function getRadiusThreshold(pos) {
+  return DATA_RANGES.radiusMin + (pos / 100) * (DATA_RANGES.radiusMax - DATA_RANGES.radiusMin);
+}
+
+function getAbundanceThreshold(pos) {
+  // Log-scale, INVERTED: pos 100 = no filter (include all), pos 0 = only most abundant.
+  // Element must have abundance ≥ threshold to show.
+  // We invert pos so that lower pos values produce HIGHER thresholds.
+  const inverted = 100 - pos;
+  const logVal = DATA_RANGES.abundanceLogMin + (inverted / 100) * (DATA_RANGES.abundanceLogMax - DATA_RANGES.abundanceLogMin);
+  return Math.pow(10, logVal);
+}
+
+function formatYearReadout(year) {
+  if (year < 0) return `c. ${Math.abs(Math.round(year))} BCE`;
+  return `${Math.round(year)}`;
+}
+
+function formatAbundance(mgPerKg) {
+  if (mgPerKg >= 10000) return `${(mgPerKg / 10000).toFixed(1)}%`;
+  if (mgPerKg >= 1) return `${mgPerKg.toFixed(1)} mg/kg`;
+  if (mgPerKg >= 0.001) return `${mgPerKg.toFixed(3)} mg/kg`;
+  return `${mgPerKg.toExponential(1)} mg/kg`;
+}
+
+// Configuration for each filter dimension.
+// Fields used: label (chip default text), icon (gap-control header), tip (always-visible
+// explainer text below the slider), getThreshold (slider position 0-100 → real value),
+// activeText (formatted threshold for chip + readouts).
+const FILTER_CONFIG = {
+  year: {
+    label: 'Year of Discovery',
+    icon: '📅',
+    tip: 'Drag the handle to fade in only elements known before that year. Reveals how chemistry unfolded — most of the table came after 1800.',
+    getThreshold: (pos) => getYearThreshold(pos),
+    activeText: (t) => `Before ${formatYearReadout(t)}`
+  },
+  density: {
+    label: 'Density',
+    icon: '⚖',
+    tip: 'Drag left to keep only lighter elements. The densest elements (osmium, iridium, platinum) cluster in one corner of the table.',
+    getThreshold: (pos) => getDensityThreshold(pos),
+    activeText: (t) => `≤ ${t.toFixed(2)} g/cm³`
+  },
+  radius: {
+    label: 'Atomic Radius',
+    icon: '⌖',
+    tip: 'Drag left to keep only smaller atoms. Atoms shrink across a period and grow down a group — the slider draws this trend visually.',
+    getThreshold: (pos) => getRadiusThreshold(pos),
+    activeText: (t) => `≤ ${Math.round(t)} pm`
+  },
+  abundance: {
+    label: "Earth's Crust Abundance",
+    icon: '🌍',
+    tip: 'Drag left to keep only the most abundant elements. Oxygen and silicon dominate; gold and platinum are vanishingly rare. Uses a log scale.',
+    getThreshold: (pos) => getAbundanceThreshold(pos),
+    activeText: (t) => `≥ ${formatAbundance(t)}`
+  }
+};
+
+function updateChipLabels() {
+  // Year
+  const yearChip = document.querySelector('[data-filter="year"]');
+  const yearText = document.getElementById('chip-text-year');
+  if (sliderState.year < 100) {
+    yearText.textContent = FILTER_CONFIG.year.activeText(getYearThreshold(sliderState.year));
+    yearChip.classList.add('has-filter');
+  } else {
+    yearText.textContent = 'Year of Discovery';
+    yearChip.classList.remove('has-filter');
+  }
+
+  // Density
+  const densityChip = document.querySelector('[data-filter="density"]');
+  const densityText = document.getElementById('chip-text-density');
+  if (sliderState.density < 100) {
+    densityText.textContent = FILTER_CONFIG.density.activeText(getDensityThreshold(sliderState.density));
+    densityChip.classList.add('has-filter');
+  } else {
+    densityText.textContent = 'Density';
+    densityChip.classList.remove('has-filter');
+  }
+
+  // Radius
+  const radiusChip = document.querySelector('[data-filter="radius"]');
+  const radiusText = document.getElementById('chip-text-radius');
+  if (sliderState.radius < 100) {
+    radiusText.textContent = FILTER_CONFIG.radius.activeText(getRadiusThreshold(sliderState.radius));
+    radiusChip.classList.add('has-filter');
+  } else {
+    radiusText.textContent = 'Atomic Radius';
+    radiusChip.classList.remove('has-filter');
+  }
+
+  // Abundance
+  const abundanceChip = document.querySelector('[data-filter="abundance"]');
+  const abundanceText = document.getElementById('chip-text-abundance');
+  if (sliderState.abundance < 100) {
+    abundanceText.textContent = FILTER_CONFIG.abundance.activeText(getAbundanceThreshold(sliderState.abundance));
+    abundanceChip.classList.add('has-filter');
+  } else {
+    abundanceText.textContent = 'Crust Abundance';
+    abundanceChip.classList.remove('has-filter');
+  }
+
+  // State chip — summarises any active phase / synthetic / radioactive toggles
+  const stateChip = document.querySelector('[data-filter="state"]');
+  const stateText = document.getElementById('chip-text-state');
+  const parts = [];
+  if (toggleState.states.size > 0) {
+    parts.push(Array.from(toggleState.states).map(s =>
+      s.charAt(0).toUpperCase() + s.slice(1)).join('/'));
+  }
+  if (toggleState.synthetic) parts.push('Synthetic');
+  if (toggleState.radioactive) parts.push('Radioactive');
+  if (parts.length > 0) {
+    stateText.textContent = parts.join(' · ');
+    stateChip.classList.add('has-filter');
+  } else {
+    stateText.textContent = 'State & Type';
+    stateChip.classList.remove('has-filter');
+  }
+
+  // Stardust chip — summarises selected origin processes
+  const stardustChip = document.querySelector('[data-filter="stardust"]');
+  const stardustText = document.getElementById('chip-text-stardust');
+  if (toggleState.origins.size > 0) {
+    if (toggleState.origins.size === 1) {
+      const key = Array.from(toggleState.origins)[0];
+      const cfg = ORIGIN_CONFIG.find(o => o.key === key);
+      stardustText.textContent = cfg ? cfg.short : 'Stardust';
+    } else {
+      stardustText.textContent = `${toggleState.origins.size} origins`;
+    }
+    stardustChip.classList.add('has-filter');
+  } else {
+    stardustText.textContent = 'Stardust';
+    stardustChip.classList.remove('has-filter');
+  }
+
+}
+
+// =====================================================
+// HISTOGRAM PANEL
+// =====================================================
+
+function openFilterPanel(key) {
+  // If clicking the already-active chip, close instead
+  if (histoState.activeFilter === key) {
+    closeFilterPanel();
+    return;
+  }
+
+  // Clear any active search term when opening a filter panel — searching and
+  // chip-filtering at the same time is rarely what the user wants, and the
+  // search input is about to be hidden behind the panel anyway. Direct
+  // applyFilters() call because setting .value doesn't fire 'input'.
+  const searchInput = document.getElementById('search');
+  if (searchInput && searchInput.value !== '') {
+    searchInput.value = '';
+    applyFilters();
+  }
+
+  histoState.activeFilter = key;
+
+  // Update chip expanded states
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.classList.toggle('expanded', chip.dataset.filter === key);
+  });
+
+  const gap = document.getElementById('gapControl');
+  gap.hidden = false;
+  gap.dataset.activeFilter = key;
+  positionGapControl();
+
+  if (key === 'state') {
+    renderStateControls();
+  } else if (key === 'stardust') {
+    renderStardustControls();
+  } else {
+    renderHistogram(key);
+  }
+}
+
+function closeFilterPanel() {
+  histoState.activeFilter = null;
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.classList.remove('expanded');
+  });
+  document.getElementById('gapControl').hidden = true;
+}
+
+// Pin the gap-control's top/height — and the search bar's vertical position —
+// to actual cell heights via runtime measurement. Both occupy the same band:
+// top edge at the middle of row 1, bottom edge at the middle of row 3.
+// The gap-control fills that band; the search bar is single-line and sits
+// vertically centered within it.
+//
+// Width and left for both elements are set via CSS calc (those work correctly
+// because they're percentages of the parent's width).
+function positionGapControl() {
+  const firstCell = document.querySelector('.element:not(.placeholder)');
+  if (!firstCell) return;
+  const cellH = firstCell.getBoundingClientRect().height;
+  const gapPx = 3; // matches CSS gap value on .table
+  const bandTop = cellH * 0.5;
+  const bandHeight = cellH * 2 + gapPx * 2;
+
+  // Gap-control fills the entire band when visible
+  const gap = document.getElementById('gapControl');
+  if (gap && !gap.hidden) {
+    gap.style.top = `${bandTop}px`;
+    gap.style.height = `${bandHeight}px`;
+  }
+
+  // Search bar sits vertically centered in the same band (regardless of
+  // whether the gap-control is open — the panel just overlays it)
+  const search = document.getElementById('search');
+  if (search) {
+    const searchH = search.getBoundingClientRect().height;
+    search.style.top = `${bandTop + (bandHeight - searchH) / 2}px`;
+  }
+}
+
+function renderHistogram(key) {
+  const config = FILTER_CONFIG[key];
+  const gap = document.getElementById('gapControl');
+
+  // Compute bins by mapping each element's value to a slider position 0-100,
+  // then bucketing those positions evenly.
+  const positions = [];
+  ELEMENTS.forEach(el => {
+    const num = el[0];
+    let value = null;
+    if (key === 'year') value = el[13];
+    else if (key === 'density') value = el[11];
+    else if (key === 'radius') value = ELEMENT_EXTRA[num] ? ELEMENT_EXTRA[num][0] : null;
+    else if (key === 'abundance') value = ELEMENT_EXTRA[num] ? ELEMENT_EXTRA[num][1] : null;
+    if (value === null || isNaN(value) || value === undefined) return;
+    if (key === 'abundance' && value <= 0) return;
+    const pos = valueToSliderPos(key, value);
+    if (pos !== null) positions.push(pos);
+  });
+
+  // Compact bin count for the small in-table region
+  const binCount = 18;
+  const bins = new Array(binCount).fill(0);
+  positions.forEach(pos => {
+    const idx = Math.min(binCount - 1, Math.floor(pos / 100 * binCount));
+    bins[idx]++;
+  });
+  const maxBin = Math.max(...bins, 1);
+
+  // Build compact chart DOM — chip rail handles labelling and closing
+  gap.innerHTML = `
+    <div class="gap-control-header">
+      <span class="gap-control-icon">${config.icon}</span>
+      <span class="gap-control-label">${config.label}</span>
+    </div>
+    <div class="histo-chart" id="histoChart">
+      <div class="histo-bars" id="histoBars"></div>
+      <div class="histo-drag" id="histoDrag"></div>
+      <div class="histo-thumb" id="histoThumb" style="left: ${sliderState[key]}%"></div>
+    </div>
+    <div class="gap-control-explainer">${config.tip}</div>
+  `;
+
+  const barsContainer = document.getElementById('histoBars');
+  bins.forEach(count => {
+    const bar = document.createElement('div');
+    bar.className = 'histo-bar';
+    bar.style.height = `${(count / maxBin) * 100}%`;
+    barsContainer.appendChild(bar);
+  });
+
+  paintBars(key);
+  attachHistoDrag(key);
+}
+
+function valueToSliderPos(key, value) {
+  // Inverse of getXThreshold — finds the slider position (0-100) at which
+  // the threshold crosses this value. Used for bin placement.
+  if (key === 'year') {
+    const yearMin = DATA_RANGES.yearMin;
+    const yearMax = DATA_RANGES.yearMax;
+    const breakpoint = 25, breakYear = 1700;
+    if (value <= breakYear) {
+      return ((value - yearMin) / (breakYear - yearMin)) * breakpoint;
+    }
+    return breakpoint + ((value - breakYear) / (yearMax - breakYear)) * (100 - breakpoint);
+  }
+  if (key === 'density') {
+    return ((value - DATA_RANGES.densityMin) / (DATA_RANGES.densityMax - DATA_RANGES.densityMin)) * 100;
+  }
+  if (key === 'radius') {
+    return ((value - DATA_RANGES.radiusMin) / (DATA_RANGES.radiusMax - DATA_RANGES.radiusMin)) * 100;
+  }
+  if (key === 'abundance') {
+    if (value <= 0) return null;
+    const log = Math.log10(value);
+    const fraction = (log - DATA_RANGES.abundanceLogMin) / (DATA_RANGES.abundanceLogMax - DATA_RANGES.abundanceLogMin);
+    return 100 - fraction * 100;
+  }
+  return null;
+}
+
+function paintBars(key) {
+  const pos = sliderState[key];
+  const bars = document.querySelectorAll('#histoBars .histo-bar');
+  const binCount = bars.length;
+  bars.forEach((bar, idx) => {
+    const binCenter = ((idx + 0.5) / binCount) * 100;
+    const included = binCenter <= pos;
+    bar.classList.toggle('below-threshold', included);
+    bar.classList.toggle('above-threshold', !included);
+  });
+}
+
+function attachHistoDrag(key) {
+  const chart = document.getElementById('histoChart');
+  const drag = document.getElementById('histoDrag');
+  const thumb = document.getElementById('histoThumb');
+  let isDragging = false;
+
+  // The drag hit zone (`.histo-drag`) is intentionally wider than the chart
+  // so the thumb circle is fully grabbable at both ends. But the thumb's
+  // `left: %` is positioned against the chart, and 0% / 100% must hit the
+  // chart's edges — so we measure against the chart's rect, not the drag's.
+  function setFromX(clientX) {
+    const rect = chart.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    const pos = Math.round((x / rect.width) * 100);
+    sliderState[key] = pos;
+    thumb.style.left = `${pos}%`;
+    paintBars(key);
+    updateChipLabels();
+    applyFilters();
+  }
+
+  drag.addEventListener('pointerdown', (e) => {
+    isDragging = true;
+    drag.setPointerCapture(e.pointerId);
+    setFromX(e.clientX);
+  });
+  drag.addEventListener('pointermove', (e) => {
+    if (isDragging) setFromX(e.clientX);
+  });
+  drag.addEventListener('pointerup', (e) => {
+    isDragging = false;
+    drag.releasePointerCapture(e.pointerId);
+  });
+}
+
+// Per-key science copy for the State & Type panel. Mirrors STARDUST_COPY.
+// Default appears whenever 0 or 2+ chips are active (multi-select model);
+// a single-chip selection swaps in the matching body line.
+const STATE_COPY = {
+  default:     'Filter by physical state, or show only radioactive elements. Most are solid; mercury and bromine are the only liquids.',
+  solid:       'Most of the table — metals, metalloids, carbon, sulphur, iodine, phosphorus, and the noble metals at room temperature.',
+  liquid:      'Just two: mercury and bromine. Liquid at standard room temperature; the rest melt only at higher temperatures.',
+  gas:         'Hydrogen, nitrogen, oxygen, fluorine, chlorine, and the noble gases — the lightest and least bonded elements.',
+  synthetic:   'Made in particle accelerators, never found in nature. Most decay within seconds of being created.',
+  radioactive: 'All elements past bismuth (83), plus a few exceptions like technetium and promethium. Their nuclei are unstable.'
+};
+
+// Returns the body text for the State explainer based on current selection.
+// Per-key science copy for the State & Type panel. Mirrors STARDUST_COPY.
+// Default appears whenever 0 or 2+ chips are active (multi-select model);
+// a single-chip selection swaps in the matching body line.
+// Multi-select rule: exactly one active chip → that chip's copy.
+// Zero or more-than-one active → default.
+function stateBodyText() {
+  const activeKeys = [...toggleState.states];
+  if (toggleState.synthetic) activeKeys.push('synthetic');
+  if (toggleState.radioactive) activeKeys.push('radioactive');
+  return activeKeys.length === 1 ? STATE_COPY[activeKeys[0]] : STATE_COPY.default;
+}
+
+function renderStateControls() {
+  const gap = document.getElementById('gapControl');
+
+  // Phase chips (Solid/Liquid/Gas) behave as a radio group — at most one active —
+  // since an element can only be in one physical state at room temperature.
+  // Synthetic and Radioactive are orthogonal flags that AND-combine with phase
+  // (and each other) at filter time. The vertical divider in the markup signals
+  // this split visually.
+  const PHASE_CHIPS = ['solid', 'liquid', 'gas'];
+
+  gap.innerHTML = `
+    <div class="gap-control-header">
+      <span class="gap-control-icon">❄</span>
+      <span class="gap-control-label">State &amp; Type</span>
+    </div>
+    <div class="state-controls">
+      <button class="toggle-chip ${toggleState.states.has('solid') ? 'active' : ''}" data-state="solid">Solid</button>
+      <button class="toggle-chip ${toggleState.states.has('liquid') ? 'active' : ''}" data-state="liquid">Liquid</button>
+      <button class="toggle-chip ${toggleState.states.has('gas') ? 'active' : ''}" data-state="gas">Gas</button>
+      <span class="state-divider" aria-hidden="true"></span>
+      <button class="toggle-chip ${toggleState.synthetic ? 'active' : ''}" data-flag="synthetic">Synthetic</button>
+      <button class="toggle-chip ${toggleState.radioactive ? 'active' : ''}" data-flag="radioactive">☢ Radioactive</button>
+    </div>
+    <div class="gap-control-explainer state-explainer">
+      <div class="state-prompt">What state is each element in at room temperature?</div>
+      <div class="state-body" id="stateBody">${stateBodyText()}</div>
+    </div>
+  `;
+
+  // Helper — refresh the dynamic body line in place after any chip toggle.
+  const refreshBody = () => {
+    const body = document.getElementById('stateBody');
+    if (body) body.textContent = stateBodyText();
+  };
+
+  // Phase chips: radio behaviour over Solid/Liquid/Gas.
+  gap.querySelectorAll('.toggle-chip[data-state]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const s = chip.dataset.state;
+      const wasActive = toggleState.states.has(s);
+
+      // Clear any other active phase first, then apply the standard toggle.
+      PHASE_CHIPS.forEach(p => {
+        if (p !== s) {
+          toggleState.states.delete(p);
+          const otherChip = gap.querySelector(`.toggle-chip[data-state="${p}"]`);
+          if (otherChip) otherChip.classList.remove('active');
+        }
+      });
+
+      if (wasActive) {
+        toggleState.states.delete(s);
+        chip.classList.remove('active');
+      } else {
+        toggleState.states.add(s);
+        chip.classList.add('active');
+      }
+
+      refreshBody();
+      updateChipLabels();
+      applyFilters();
+    });
+  });
+
+  // Flag chips: independent toggles (Synthetic, Radioactive). Each has its own
+  // boolean on toggleState; the filter AND-combines them with phase. Same
+  // handler for both — the chip's data-flag attribute names the boolean.
+  gap.querySelectorAll('.toggle-chip[data-flag]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const flag = chip.dataset.flag; // 'synthetic' | 'radioactive'
+      toggleState[flag] = !toggleState[flag];
+      chip.classList.toggle('active', toggleState[flag]);
+      refreshBody();
+      updateChipLabels();
+      applyFilters();
+    });
+  });
+}
+
+// Per-origin science copy. Shown in the lower line of the explainer when an
+// origin is selected. ~100 chars each, comfortably fits in 2 lines at 11px
+// inside the ~456px-wide gap-control. Default (no selection) describes the
+// filter itself.
+const STARDUST_COPY = {
+  default:    'Filter by nucleosynthetic origin: the Big Bang, fusion in stars, supernova explosions, neutron-star mergers, or human-made in a lab.',
+  bigbang:    'Hydrogen, helium, and a whisper of lithium — forged in the first 20 minutes after the universe began.',
+  cosmicray:  'Lithium, beryllium, and boron — chipped from heavier nuclei by cosmic rays striking interstellar gas.',
+  smallstars: 'Carbon, nitrogen, and many heavier elements — built up by nuclear fusion in low- and medium-mass stars over billions of years.',
+  bigstars:   'Oxygen through iron — forged in the cores of massive stars during their lives.',
+  supernova:  'Many heavy elements past iron — flung into space when massive stars exploded.',
+  merger:     'Gold, platinum, and the heaviest natural elements — born when neutron stars collided.',
+  synthetic:  'Synthetic elements past uranium — created in particle accelerators and nuclear reactors.'
+};
+
+function renderStardustControls() {
+  const gap = document.getElementById('gapControl');
+
+  const chipsHtml = ORIGIN_CONFIG.map(o =>
+    `<button class="toggle-chip stardust-chip ${toggleState.origins.has(o.key) ? 'active' : ''}" data-origin="${o.key}">${o.short}</button>`
+  ).join('');
+
+  // Determine which copy to show based on current selection (single-select model)
+  const activeOrigin = toggleState.origins.size === 1 ? Array.from(toggleState.origins)[0] : null;
+  const bodyText = activeOrigin ? STARDUST_COPY[activeOrigin] : STARDUST_COPY.default;
+
+  gap.innerHTML = `
+    <div class="gap-control-header">
+      <span class="gap-control-icon">✨</span>
+      <span class="gap-control-label">Stardust — Cosmic Origins</span>
+    </div>
+    <div class="state-controls stardust-controls">${chipsHtml}</div>
+    <div class="gap-control-explainer stardust-explainer">
+      <div class="stardust-prompt">Where in the universe was each element forged?</div>
+      <div class="stardust-body" id="stardustBody">${bodyText}</div>
+    </div>
+  `;
+
+  gap.querySelectorAll('.toggle-chip[data-origin]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const o = chip.dataset.origin;
+      const wasActive = toggleState.origins.has(o);
+
+      // Single-select behaviour: clicking always clears prior selections.
+      // Then either toggle the clicked one off (if it was already active)
+      // or activate it as the sole selection.
+      toggleState.origins.clear();
+      gap.querySelectorAll('.toggle-chip[data-origin]').forEach(c => c.classList.remove('active'));
+
+      if (!wasActive) {
+        toggleState.origins.add(o);
+        chip.classList.add('active');
+      }
+
+      // Update the dynamic explainer body in place (no re-render)
+      const newOrigin = toggleState.origins.size === 1 ? Array.from(toggleState.origins)[0] : null;
+      const body = document.getElementById('stardustBody');
+      if (body) body.textContent = newOrigin ? STARDUST_COPY[newOrigin] : STARDUST_COPY.default;
+
+      updateChipLabels();
+      applyFilters();
+    });
+  });
+}
+
+function isAnyFilterActive() {
+  return activeFilter !== null
+    || document.getElementById('search').value.trim() !== ''
+    || sliderState.year < 100
+    || sliderState.density < 100
+    || sliderState.radius < 100
+    || sliderState.abundance < 100
+    || toggleState.states.size > 0
+    || toggleState.synthetic
+    || toggleState.radioactive
+    || toggleState.origins.size > 0;
+}
+
+function applyFilters() {
+  const searchTerm = document.getElementById('search').value.trim().toLowerCase();
+
+  // Update legend states
+  document.querySelectorAll('.legend-item').forEach(item => {
+    if (activeFilter && item.dataset.category !== activeFilter) {
+      item.classList.add('dimmed');
+    } else {
+      item.classList.remove('dimmed');
+    }
+  });
+
+  // Compute thresholds once per call
+  const yearThreshold = sliderState.year < 100 ? getYearThreshold(sliderState.year) : null;
+  const densityThreshold = sliderState.density < 100 ? getDensityThreshold(sliderState.density) : null;
+  const radiusThreshold = sliderState.radius < 100 ? getRadiusThreshold(sliderState.radius) : null;
+  const abundanceThreshold = sliderState.abundance < 100 ? getAbundanceThreshold(sliderState.abundance) : null;
+
+  // Track how many real elements (excluding placeholders) survive all filters,
+  // so we can surface an empty-state message when the combination matches none.
+  let matchCount = 0;
+
+  document.querySelectorAll('.element:not(.placeholder)').forEach(el => {
+    const num = parseInt(el.dataset.number);
+    const data = ELEMENTS.find(e => e[0] === num);
+    if (!data) return;
+
+    const [, symbol, name, , category, , , , , , , density, , year] = data;
+    const extra = ELEMENT_EXTRA[num];
+    const radius = extra ? extra[0] : null;
+    const abundance = extra ? extra[1] : null;
+    const state = extra ? extra[2] : null;
+    const radioactive = extra ? extra[3] : false;
+
+    let matches = true;
+
+    // Category filter (legend)
+    if (activeFilter && category !== activeFilter) matches = false;
+
+    // Search filter
+    if (searchTerm) {
+      const matchesSearch =
+        symbol.toLowerCase().includes(searchTerm) ||
+        name.toLowerCase().includes(searchTerm) ||
+        String(num) === searchTerm ||
+        String(num).startsWith(searchTerm);
+      if (!matchesSearch) matches = false;
+    }
+
+    // Slider: year (element must be discovered ≤ threshold)
+    if (yearThreshold !== null && year > yearThreshold) matches = false;
+
+    // Slider: density (element must be ≤ threshold)
+    if (densityThreshold !== null) {
+      if (density === null || isNaN(density) || density > densityThreshold) matches = false;
+    }
+
+    // Slider: radius (element must be ≤ threshold)
+    if (radiusThreshold !== null) {
+      if (radius === null || radius > radiusThreshold) matches = false;
+    }
+
+    // Slider: abundance (element must be ≥ threshold)
+    if (abundanceThreshold !== null) {
+      if (abundance === null || abundance < abundanceThreshold) matches = false;
+    }
+
+    // Toggle: phase at room temperature (solid / liquid / gas). Synthetic is
+    // its own clause below — it's an orthogonal dimension that AND-combines
+    // with phase. Solid + Synthetic now correctly returns Tc, Pm, the late
+    // actinides, and the superheavy solids.
+    if (toggleState.states.size > 0) {
+      if (!state || !toggleState.states.has(state)) matches = false;
+    }
+
+    // Toggle: synthetic-only (orthogonal to phase, sourced from the
+    // ELEMENT_SYNTHETIC Set so the data model treats it independently)
+    if (toggleState.synthetic && !ELEMENT_SYNTHETIC.has(num)) matches = false;
+
+    // Toggle: radioactive-only (AND with everything else)
+    if (toggleState.radioactive && !radioactive) matches = false;
+
+    // Toggle: stardust origin (multi-select; element matches if its origin is selected)
+    if (toggleState.origins.size > 0) {
+      const origin = ELEMENT_ORIGIN[num];
+      if (!origin || !toggleState.origins.has(origin)) matches = false;
+    }
+
+    // Apply visual: 'faded' class for slider-based filtering (greyscale + translucent),
+    // 'dimmed' for category/search (opacity-based)
+    el.classList.toggle('faded', !matches);
+    if (matches) matchCount++;
+  });
+
+  // Empty-state banner: shown only when at least one filter is active, nothing
+  // matches, and the user hasn't actively dismissed it. The dismissed flag
+  // auto-clears whenever match count returns to non-zero (see top of file),
+  // so removing a filter and then hitting zero again re-shows the banner.
+  const emptyBanner = document.getElementById('emptyStateBanner');
+  if (emptyBanner) {
+    const filtersActive = isAnyFilterActive();
+    if (matchCount > 0) emptyStateDismissed = false;
+    emptyBanner.hidden = !(filtersActive && matchCount === 0 && !emptyStateDismissed);
+  }
+
+  // Update reset button enabled state
+  const resetBtn = document.getElementById('resetAllBtn');
+  if (resetBtn) resetBtn.disabled = !isAnyFilterActive();
+}
+
+function resetAllFilters() {
+  // Reset sliders
+  sliderState.year = 100;
+  sliderState.density = 100;
+  sliderState.radius = 100;
+  sliderState.abundance = 100;
+
+  // Reset toggles
+  toggleState.states.clear();
+  toggleState.synthetic = false;
+  toggleState.radioactive = false;
+  toggleState.origins.clear();
+
+  // Reset category & search
+  activeFilter = null;
+  document.getElementById('search').value = '';
+
+  updateChipLabels();
+  applyFilters();
+
+  // If a panel is open, refresh its UI to reflect reset
+  if (histoState.activeFilter === 'state') {
+    renderStateControls();
+  } else if (histoState.activeFilter === 'stardust') {
+    renderStardustControls();
+  } else if (histoState.activeFilter) {
+    paintBars(histoState.activeFilter);
+    const thumb = document.getElementById('histoThumb');
+    if (thumb) thumb.style.left = '100%';
+  }
+}
+
+function openModal(data) {
+  const [number, symbol, name, mass, category, group, period, config, electroneg, melting, boiling, density, discoverer, year, description] = data;
+  const cat = CATEGORIES[category];
+
+  const header = document.getElementById('modalHeader');
+  header.style.setProperty('--cat-color', cat.color);
+  header.innerHTML = `
+    <div class="modal-meta">
+      <span>No. ${String(number).padStart(3, '0')}</span>
+      <span>Group ${group || '—'} &nbsp;·&nbsp; Period ${period}</span>
+    </div>
+    <div class="modal-symbol">${symbol}</div>
+    <div class="modal-name">${name}</div>
+    <div class="modal-category-tag" style="background:${cat.color}">${cat.label}</div>
+  `;
+
+  const formatYear = (y) => {
+    if (y < 0) return `c. ${Math.abs(y)} BCE`;
+    return y;
+  };
+
+  const body = document.getElementById('modalBody');
+  body.innerHTML = `
+    <div class="properties">
+      <div class="prop">
+        <div class="prop-label">Atomic Mass</div>
+        <div class="prop-value">${mass}<span class="unit">u</span></div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Electron Configuration</div>
+        <div class="prop-value" style="font-size: 14px;">${config}</div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Electronegativity</div>
+        <div class="prop-value">${electroneg !== null ? electroneg : '—'}<span class="unit">${electroneg !== null ? 'Pauling' : ''}</span></div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Density</div>
+        <div class="prop-value">${density}<span class="unit">g/cm³</span></div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Melting Point</div>
+        <div class="prop-value">${melting !== null ? melting : '—'}<span class="unit">${melting !== null ? 'K' : ''}</span></div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Boiling Point</div>
+        <div class="prop-value">${boiling !== null ? boiling : '—'}<span class="unit">${boiling !== null ? 'K' : ''}</span></div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Discovered By</div>
+        <div class="prop-value" style="font-size: 15px;">${discoverer}</div>
+      </div>
+      <div class="prop">
+        <div class="prop-label">Year</div>
+        <div class="prop-value">${formatYear(year)}</div>
+      </div>
+    </div>
+    <div class="atom-viewer" id="atomViewer" style="--cat-color: ${cat.color}">
+      <div class="atom-header">
+        <div class="atom-label">Atomic Structure</div>
+        <div class="model-toggle" id="modelToggle"></div>
+      </div>
+      <canvas class="atom-canvas" id="atomCanvas"></canvas>
+      <div class="atom-legend" id="atomLegend"></div>
+      <div class="atom-note" id="atomNote"></div>
+    </div>
+    <div class="description">${description}</div>
+  `;
+
+  initAtomViewer(data);
+
+  document.getElementById('modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+  document.body.style.overflow = '';
+  disposeAtomViewer();
+}
+
+// =====================================================
+// HAMBURGER MENU
+// =====================================================
+// Single dropdown panel anchored below the menu button. The three top-level
+// items always render; "About this table" expands an accordion below the
+// list when clicked, and a Hide button inside the accordion collapses it.
+// Compact view is a body class toggled directly; reset just delegates to
+// resetAllFilters().
+
+function openMenu() {
+  const panel = document.getElementById('menuPanel');
+  const btn = document.getElementById('menuBtn');
+  if (!panel || !btn) return;
+  panel.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  // Always start with the About accordion collapsed when re-opening the
+  // menu, so the user gets a consistent first impression.
+  collapseAbout();
+}
+
+function closeMenu() {
+  const panel = document.getElementById('menuPanel');
+  const btn = document.getElementById('menuBtn');
+  if (!panel || !btn) return;
+  panel.hidden = true;
+  btn.setAttribute('aria-expanded', 'false');
+}
+
+function expandAbout() {
+  const about = document.getElementById('menuAbout');
+  const trigger = document.querySelector('.menu-item[data-action="about"]');
+  if (about) {
+    about.classList.add('expanded');
+    about.setAttribute('aria-hidden', 'false');
+  }
+  if (trigger) trigger.setAttribute('aria-expanded', 'true');
+}
+
+function collapseAbout() {
+  const about = document.getElementById('menuAbout');
+  const trigger = document.querySelector('.menu-item[data-action="about"]');
+  if (about) {
+    about.classList.remove('expanded');
+    about.setAttribute('aria-hidden', 'true');
+  }
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+
+function toggleAbout() {
+  const about = document.getElementById('menuAbout');
+  if (!about) return;
+  if (about.classList.contains('expanded')) collapseAbout();
+  else expandAbout();
+}
+
+function toggleCompactView() {
+  const on = document.body.classList.toggle('compact-view');
+  const item = document.querySelector('.menu-item[data-action="compact"]');
+  if (item) item.setAttribute('aria-pressed', String(on));
+  // Cell heights may have changed (header shrunk); re-pin search bar.
+  requestAnimationFrame(positionGapControl);
+}
+
+// =====================================================
+// ATOM VIEWER — Three.js
+// =====================================================
+
+// Elements that get the orbital probability cloud option
+const ORBITAL_ELEMENTS = {
+  1: { // Hydrogen: 1s¹
+    note: "Hydrogen has a single electron in a spherical 1s orbital. The Bohr ring is a useful cartoon — the actual electron exists as a fuzzy probability cloud, denser near the nucleus and fading outward.",
+    orbitals: [
+      { type: 's', shell: 1, electrons: 1 }
+    ]
+  },
+  6: { // Carbon: 1s² 2s² 2p²
+    note: "Carbon's six electrons fill the 1s and 2s spherical orbitals, with two more in dumbbell-shaped 2p orbitals. The dumbbells are why carbon bonds so versatilely — they reach in different directions and rearrange when atoms combine.",
+    orbitals: [
+      { type: 's', shell: 1, electrons: 2 },
+      { type: 's', shell: 2, electrons: 2 },
+      { type: 'p', shell: 2, electrons: 2, axes: ['x', 'y'] }
+    ]
+  },
+  8: { // Oxygen: 1s² 2s² 2p⁴
+    note: "Oxygen has the same orbital shapes as carbon — spheres for s, dumbbells for p — but more 2p electrons. Notice how the same shapes repeat across elements; that pattern is what makes the periodic table periodic.",
+    orbitals: [
+      { type: 's', shell: 1, electrons: 2 },
+      { type: 's', shell: 2, electrons: 2 },
+      { type: 'p', shell: 2, electrons: 4, axes: ['x', 'y', 'z'] }
+    ]
+  }
+};
+
+let atomState = null;
+
+function disposeAtomViewer() {
+  if (!atomState) return;
+  if (atomState.animationId) cancelAnimationFrame(atomState.animationId);
+  if (atomState.renderer) {
+    atomState.renderer.dispose();
+    atomState.renderer.forceContextLoss();
+  }
+  if (atomState.scene) {
+    atomState.scene.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+    });
+  }
+  if (atomState.resizeHandler) window.removeEventListener('resize', atomState.resizeHandler);
+  atomState = null;
+}
+
+function initAtomViewer(elementData) {
+  const [number, symbol, name, mass] = elementData;
+  const protons = number;
+  const neutrons = Math.max(0, Math.round(mass) - protons);
+
+  const canvas = document.getElementById('atomCanvas');
+  const toggle = document.getElementById('modelToggle');
+  const note = document.getElementById('atomNote');
+  const legend = document.getElementById('atomLegend');
+
+  const hasOrbitals = ORBITAL_ELEMENTS[number] !== undefined;
+
+  // Build toggle buttons
+  toggle.innerHTML = `<button data-mode="bohr" class="active">Bohr Model</button>` +
+    (hasOrbitals ? `<button data-mode="orbital">Orbital Cloud</button>` : '');
+
+  // Set up renderer
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e0d0c);
+
+  const width = canvas.clientWidth || 600;
+  const height = 280;
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+  camera.position.set(0, 0, 60);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(width, height, false);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  keyLight.position.set(10, 10, 10);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0xffd9b0, 0.3);
+  fillLight.position.set(-10, -5, 5);
+  scene.add(fillLight);
+
+  const root = new THREE.Group();
+  scene.add(root);
+
+  atomState = {
+    scene, camera, renderer, root,
+    animationId: null,
+    mode: 'bohr',
+    rotation: { x: 0, y: 0 },
+    targetRotation: { x: 0, y: 0 },
+    autoRotate: true,
+    elementData,
+    protons, neutrons
+  };
+
+  // Build initial Bohr model
+  buildBohrModel(elementData);
+  updateLegend('bohr');
+  note.textContent = `Simplified Bohr model — protons and neutrons in the nucleus, electrons in shells. Click and drag to rotate.`;
+
+  // Mouse interaction
+  let isDragging = false;
+  let lastX = 0, lastY = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    isDragging = true;
+    atomState.autoRotate = false;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    atomState.targetRotation.y += dx * 0.008;
+    atomState.targetRotation.x += dy * 0.008;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    isDragging = false;
+    canvas.releasePointerCapture(e.pointerId);
+  });
+
+  // Toggle handlers
+  toggle.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      if (mode === atomState.mode) return;
+      toggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      atomState.mode = mode;
+      clearGroup(root);
+      if (mode === 'bohr') {
+        buildBohrModel(elementData);
+        note.textContent = `Simplified Bohr model — protons and neutrons in the nucleus, electrons in shells. Click and drag to rotate.`;
+      } else {
+        buildOrbitalModel(elementData);
+        note.textContent = ORBITAL_ELEMENTS[number].note;
+      }
+      updateLegend(mode);
+    });
+  });
+
+  // Resize
+  const resizeHandler = () => {
+    const w = canvas.clientWidth;
+    if (w === 0) return;
+    camera.aspect = w / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, height, false);
+  };
+  atomState.resizeHandler = resizeHandler;
+  window.addEventListener('resize', resizeHandler);
+
+  // Animate
+  function animate() {
+    atomState.animationId = requestAnimationFrame(animate);
+
+    if (atomState.autoRotate) {
+      atomState.targetRotation.y += 0.003;
+    }
+
+    // Smooth rotation
+    atomState.rotation.x += (atomState.targetRotation.x - atomState.rotation.x) * 0.1;
+    atomState.rotation.y += (atomState.targetRotation.y - atomState.rotation.y) * 0.1;
+    root.rotation.x = atomState.rotation.x;
+    root.rotation.y = atomState.rotation.y;
+
+    // Animate electrons in Bohr mode
+    if (atomState.mode === 'bohr' && atomState.electronShells) {
+      const t = performance.now() * 0.001;
+      atomState.electronShells.forEach((shell, shellIdx) => {
+        shell.electrons.forEach((electron, eIdx) => {
+          const baseAngle = (eIdx / shell.count) * Math.PI * 2;
+          const speed = 0.4 / (shellIdx + 1);
+          const angle = baseAngle + t * speed;
+          electron.position.x = Math.cos(angle) * shell.radius;
+          electron.position.z = Math.sin(angle) * shell.radius;
+          // tilt each shell slightly differently
+          electron.position.y = Math.sin(angle * 2) * shell.radius * 0.05 * (shellIdx % 2 ? 1 : -1);
+        });
+      });
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+}
+
+function clearGroup(group) {
+  while (group.children.length > 0) {
+    const obj = group.children[0];
+    group.remove(obj);
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) {
+      if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+      else obj.material.dispose();
+    }
+  }
+  atomState.electronShells = null;
+}
+
+// =====================================================
+// BOHR MODEL
+// =====================================================
+function buildBohrModel(elementData) {
+  const [number, , , mass] = elementData;
+  const protons = number;
+  const neutrons = Math.max(0, Math.round(mass) - protons);
+  const root = atomState.root;
+
+  // --- Nucleus: pack protons + neutrons in a Fibonacci sphere ---
+  const total = protons + neutrons;
+  const nucleusRadius = Math.cbrt(total) * 0.9 + 1.2;
+  const particleSize = Math.max(0.4, Math.min(0.9, 1.6 - Math.log(total + 1) * 0.15));
+
+  // Shuffle proton/neutron assignment
+  const indices = Array.from({ length: total }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  const isProton = new Array(total).fill(false);
+  for (let i = 0; i < protons; i++) isProton[indices[i]] = true;
+
+  const protonGeom = new THREE.SphereGeometry(particleSize, 12, 12);
+  const protonMat = new THREE.MeshStandardMaterial({ color: 0xD9442D, roughness: 0.6, metalness: 0.1 });
+  const neutronMat = new THREE.MeshStandardMaterial({ color: 0xB8A78A, roughness: 0.7, metalness: 0.1 });
+
+  // Fibonacci sphere distribution, then jitter inward for clustered look
+  for (let i = 0; i < total; i++) {
+    const phi = Math.acos(1 - 2 * (i + 0.5) / total);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    // Random radius inside sphere for clustered effect
+    const r = nucleusRadius * Math.cbrt(0.3 + Math.random() * 0.7);
+    const x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.sin(phi) * Math.sin(theta);
+    const z = r * Math.cos(phi);
+    const particle = new THREE.Mesh(protonGeom, isProton[i] ? protonMat : neutronMat);
+    particle.position.set(x, y, z);
+    root.add(particle);
+  }
+
+  // --- Electron shells (2, 8, 8, 18, 18, 32, 32 capacity) ---
+  const shellCapacities = [2, 8, 18, 32, 32, 18, 8];
+  const electronCounts = distributeElectrons(protons, shellCapacities);
+
+  const electronMat = new THREE.MeshStandardMaterial({
+    color: 0x4A90E2,
+    emissive: 0x1a3a5c,
+    roughness: 0.4,
+    metalness: 0.2
+  });
+  const electronGeom = new THREE.SphereGeometry(0.5, 10, 10);
+  const ringMat = new THREE.LineBasicMaterial({ color: 0x4a4239, transparent: true, opacity: 0.4 });
+
+  const shells = [];
+  electronCounts.forEach((count, idx) => {
+    if (count === 0) return;
+    const radius = nucleusRadius + 4 + idx * 4;
+
+    // Draw orbit ring
+    const segments = 96;
+    const ringPoints = [];
+    for (let i = 0; i <= segments; i++) {
+      const a = (i / segments) * Math.PI * 2;
+      ringPoints.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius));
+    }
+    const ringGeom = new THREE.BufferGeometry().setFromPoints(ringPoints);
+    const ring = new THREE.Line(ringGeom, ringMat);
+    // tilt rings slightly so they're visible from straight-on
+    ring.rotation.x = (idx % 2 === 0 ? 1 : -1) * 0.12 * idx;
+    root.add(ring);
+
+    const electrons = [];
+    for (let i = 0; i < count; i++) {
+      const e = new THREE.Mesh(electronGeom, electronMat);
+      electrons.push(e);
+      root.add(e);
+    }
+    shells.push({ radius, count, electrons });
+  });
+
+  atomState.electronShells = shells;
+
+  // Adjust camera to fit
+  const maxRadius = nucleusRadius + 4 + (electronCounts.length) * 4;
+  atomState.camera.position.set(0, maxRadius * 0.3, maxRadius * 2.4);
+  atomState.camera.lookAt(0, 0, 0);
+}
+
+function distributeElectrons(total, capacities) {
+  // Simple shell-by-shell fill (not strictly Aufbau, but matches simplified Bohr 2-8-8 etc.)
+  const result = new Array(capacities.length).fill(0);
+  let remaining = total;
+  // Use 2, 8, 8, 18, 18, 32, 32 as the simplified Bohr filling
+  const simpleCapacities = [2, 8, 8, 18, 18, 32, 32];
+  for (let i = 0; i < simpleCapacities.length && remaining > 0; i++) {
+    const fill = Math.min(simpleCapacities[i], remaining);
+    result[i] = fill;
+    remaining -= fill;
+  }
+  return result;
+}
+
+// =====================================================
+// ORBITAL CLOUD MODEL (probability density)
+// =====================================================
+function buildOrbitalModel(elementData) {
+  const [number] = elementData;
+  const config = ORBITAL_ELEMENTS[number];
+  const root = atomState.root;
+
+  // Tiny nucleus marker so students see the centre
+  const nucleusGeom = new THREE.SphereGeometry(0.6, 16, 16);
+  const nucleusMat = new THREE.MeshStandardMaterial({
+    color: 0xD9442D,
+    emissive: 0x4a1a14,
+    roughness: 0.5
+  });
+  const nucleus = new THREE.Mesh(nucleusGeom, nucleusMat);
+  root.add(nucleus);
+
+  // Build each orbital
+  config.orbitals.forEach(orbital => {
+    if (orbital.type === 's') {
+      buildSOrbital(root, orbital.shell);
+    } else if (orbital.type === 'p') {
+      orbital.axes.forEach((axis, i) => {
+        buildPOrbital(root, orbital.shell, axis);
+      });
+    }
+  });
+
+  // Camera fit
+  const maxShell = Math.max(...config.orbitals.map(o => o.shell));
+  const dist = 18 + maxShell * 6;
+  atomState.camera.position.set(0, dist * 0.25, dist);
+  atomState.camera.lookAt(0, 0, 0);
+}
+
+function buildSOrbital(parent, shell) {
+  // s orbital: spherical probability cloud. Render as a translucent sphere.
+  const radius = 3 + (shell - 1) * 4;
+  const opacity = shell === 1 ? 0.22 : 0.14;
+  // Edwin blue tones — shell 1 darker, outer shells lighter
+  const color = shell === 1 ? 0x4A90E2 : 0x7FB1E8;
+
+  // Outer fuzzy shell
+  const geom = new THREE.SphereGeometry(radius, 32, 32);
+  const mat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const sphere = new THREE.Mesh(geom, mat);
+  parent.add(sphere);
+
+  // Inner denser core
+  const innerGeom = new THREE.SphereGeometry(radius * 0.55, 24, 24);
+  const innerMat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: opacity * 1.4,
+    depthWrite: false
+  });
+  const innerSphere = new THREE.Mesh(innerGeom, innerMat);
+  parent.add(innerSphere);
+
+  // Wireframe outline for crispness
+  const wireGeom = new THREE.SphereGeometry(radius, 16, 12);
+  const wireMat = new THREE.MeshBasicMaterial({
+    color,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.15
+  });
+  parent.add(new THREE.Mesh(wireGeom, wireMat));
+}
+
+function buildPOrbital(parent, shell, axis) {
+  // p orbital: dumbbell shape (two lobes). Use lathe geometry for the lobe profile.
+  const lobeLength = 5 + (shell - 1) * 2;
+  const color = 0x7B3FF2;  // Edwin purple
+  const opacity = 0.28;
+
+  // Build a dumbbell lobe profile (peanut/teardrop shape pointing along axis)
+  // We'll create a single lobe via lathe and mirror it
+  const lobePoints = [];
+  const segments = 24;
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    // Teardrop profile: 0 at base (near nucleus), bulges out, returns to 0 at tip
+    const x = t * lobeLength;
+    // Width function: peaks around t=0.4
+    const w = Math.sin(t * Math.PI) * lobeLength * 0.35 * (1 - t * 0.3);
+    lobePoints.push(new THREE.Vector2(Math.max(0.001, w), x));
+  }
+
+  // Create one lobe, then mirror for the other
+  function makeLobe(direction) {
+    const geom = new THREE.LatheGeometry(lobePoints, 24);
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const lobe = new THREE.Mesh(geom, mat);
+
+    // Lathe is around y-axis by default, lobe extends in +y direction
+    // Orient lobe along the requested axis
+    if (axis === 'x') {
+      lobe.rotation.z = -Math.PI / 2 * direction;
+      if (direction === -1) lobe.rotation.z = Math.PI / 2;
+    } else if (axis === 'y') {
+      if (direction === -1) lobe.rotation.x = Math.PI;
+    } else if (axis === 'z') {
+      lobe.rotation.x = Math.PI / 2 * direction;
+      if (direction === -1) lobe.rotation.x = -Math.PI / 2;
+    }
+
+    // Wireframe pass for crispness
+    const wireMat = new THREE.MeshBasicMaterial({
+      color,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.18
+    });
+    const wire = new THREE.Mesh(geom, wireMat);
+    wire.rotation.copy(lobe.rotation);
+
+    parent.add(lobe);
+    parent.add(wire);
+  }
+
+  makeLobe(1);
+  makeLobe(-1);
+}
+
+function updateLegend(mode) {
+  const legend = document.getElementById('atomLegend');
+  if (mode === 'bohr') {
+    legend.innerHTML = `
+      <span class="atom-legend-item"><span class="atom-legend-dot" style="background:#D9442D"></span>Proton</span>
+      <span class="atom-legend-item"><span class="atom-legend-dot" style="background:#B8A78A"></span>Neutron</span>
+      <span class="atom-legend-item"><span class="atom-legend-dot" style="background:#4A90E2"></span>Electron</span>
+    `;
+  } else {
+    legend.innerHTML = `
+      <span class="atom-legend-item"><span class="atom-legend-dot" style="background:#4A90E2"></span>s orbital (sphere)</span>
+      <span class="atom-legend-item"><span class="atom-legend-dot" style="background:#7B3FF2"></span>p orbital (dumbbell)</span>
+      <span class="atom-legend-item"><span class="atom-legend-dot" style="background:#D9442D"></span>Nucleus</span>
+    `;
+  }
+}
+
+// Wire up
+document.addEventListener('DOMContentLoaded', () => {
+  buildTable();
+  buildLegend();
+  computeDataRanges();
+  updateChipLabels();
+
+  // Position the search bar (and gap-control if it ever ends up open at load).
+  // Deferred a frame so the browser has laid out the table and cell heights
+  // are measurable; getBoundingClientRect() before layout returns zero.
+  requestAnimationFrame(positionGapControl);
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      // Close in order of "what's most-recently in front of the user":
+      // modal first (it's the most modal-like), then any open dropdown
+      // panel (hamburger menu or games), then any open filter panel.
+      const modal = document.getElementById('modal');
+      const menuPanel = document.getElementById('menuPanel');
+      const gamesPanelEl = document.getElementById('gamesPanel');
+      if (modal.classList.contains('active')) {
+        closeModal();
+      } else if (menuPanel && !menuPanel.hidden) {
+        closeMenu();
+      } else if (gamesPanelEl && !gamesPanelEl.hidden) {
+        closeGamesPanel();
+      } else if (histoState.activeFilter) {
+        closeFilterPanel();
+      }
+    }
+  });
+
+  document.getElementById('search').addEventListener('input', applyFilters);
+
+  // Filter chips — clicking opens/toggles the histogram panel for that filter
+  document.querySelectorAll('.filter-chip[data-filter]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      openFilterPanel(chip.dataset.filter);
+    });
+  });
+
+  // Reset all
+  document.getElementById('resetAllBtn').addEventListener('click', resetAllFilters);
+
+  // Empty-state banner actions. Dismiss just hides the overlay (keeps filters
+  // intact); Dismiss & Reset clears every active filter as well. Both set the
+  // dismissed flag, but resetAllFilters() restores match count to all elements
+  // so the auto-clear logic in applyFilters() flips the flag back to false on
+  // the very same call — that's fine, since with no filters active the banner
+  // is hidden by the `filtersActive` check anyway.
+  const dismissBtn = document.getElementById('emptyStateDismiss');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      emptyStateDismissed = true;
+      const banner = document.getElementById('emptyStateBanner');
+      if (banner) banner.hidden = true;
+    });
+  }
+  const dismissResetBtn = document.getElementById('emptyStateDismissReset');
+  if (dismissResetBtn) {
+    dismissResetBtn.addEventListener('click', () => {
+      emptyStateDismissed = true;
+      resetAllFilters();
+    });
+  }
+
+  // Fullscreen toggle
+  const fsBtn = document.getElementById('fullscreenBtn');
+  fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(err => {
+        console.warn('Fullscreen request failed:', err);
+      });
+    } else {
+      document.exitFullscreen?.();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
+    // Re-pin both gap-control and search bar after fullscreen change since
+    // cell sizes may shift; the function no-ops on whichever isn't applicable.
+    positionGapControl();
+  });
+
+  // Reposition gap-control + search bar on window resize so their top/height
+  // stay locked to actual cell heights (which change as the table reflows).
+  window.addEventListener('resize', () => {
+    positionGapControl();
+  });
+
+  // ===== Hamburger menu =====
+  const menuBtn = document.getElementById('menuBtn');
+  const menuPanel = document.getElementById('menuPanel');
+
+  // Toggle panel on button click. Stop propagation so the document-level
+  // click-outside handler below doesn't immediately close it again.
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menuPanel.hidden) {
+      // Mutual exclusion with the games panel — they overlap visually,
+      // so opening one closes the other (see games button handler below).
+      const gamesPanelEl = document.getElementById('gamesPanel');
+      if (gamesPanelEl && !gamesPanelEl.hidden) closeGamesPanel();
+      openMenu();
+    } else {
+      closeMenu();
+    }
+  });
+
+  // Click-outside-to-close. The panel itself stops propagation on its own
+  // clicks (below) so item clicks don't bubble up and dismiss the menu
+  // unintentionally — except when the action explicitly closes it.
+  document.addEventListener('click', (e) => {
+    if (menuPanel.hidden) return;
+    if (menuPanel.contains(e.target) || menuBtn.contains(e.target)) return;
+    closeMenu();
+  });
+
+  // Menu item handlers. About toggles the accordion; Compact toggles the
+  // body class (stays open since user might flip it twice); Reset runs and
+  // closes the menu.
+  document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const action = item.dataset.action;
+      if (action === 'about') {
+        toggleAbout();
+      } else if (action === 'compact') {
+        toggleCompactView();
+      } else if (action === 'reset') {
+        resetAllFilters();
+        closeMenu();
+      }
+    });
+  });
+
+  // Hide button inside the About accordion — collapses the section back up.
+  const menuAboutHide = document.getElementById('menuAboutHide');
+  if (menuAboutHide) {
+    menuAboutHide.addEventListener('click', collapseAbout);
+  }
+
+  // ===== Games launcher trigger =====
+  // Step 1 of the multi-chat games build per the parking lot: the button
+  // exists, is positioned, and opens a small "coming soon" panel. The real
+  // launcher overlay (game tiles, difficulty pickers, brand-color cascade)
+  // is built in the next chat — at that point this panel and its open/close
+  // helpers get replaced with openGameLauncher().
+  const gamesBtn = document.getElementById('gamesBtn');
+  const gamesPanel = document.getElementById('gamesPanel');
+  const gamesPanelClose = document.getElementById('gamesPanelClose');
+
+  function openGamesPanel() {
+    if (!gamesPanel || !gamesBtn) return;
+    gamesPanel.hidden = false;
+    gamesBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeGamesPanel() {
+    if (!gamesPanel || !gamesBtn) return;
+    gamesPanel.hidden = true;
+    gamesBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  if (gamesBtn) {
+    // TODO(games-chat-2): replace open behaviour with openGameLauncher()
+    gamesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (gamesPanel.hidden) {
+        // Mutual exclusion: the hamburger menu panel and the games panel
+        // share the same horizontal space, so one closes when the other
+        // opens to avoid them stacking on top of each other visually.
+        const menuPanel = document.getElementById('menuPanel');
+        if (menuPanel && !menuPanel.hidden) closeMenu();
+        openGamesPanel();
+      } else {
+        closeGamesPanel();
+      }
+    });
+  }
+
+  if (gamesPanelClose) {
+    gamesPanelClose.addEventListener('click', closeGamesPanel);
+  }
+
+  // Click-outside-to-close — same pattern as the hamburger menu.
+  document.addEventListener('click', (e) => {
+    if (!gamesPanel || gamesPanel.hidden) return;
+    if (gamesPanel.contains(e.target) || gamesBtn.contains(e.target)) return;
+    closeGamesPanel();
+  });
+});
+
+/* =============================================================================
+   PARKING LOT — PLANNED FUTURE WORK
+   =============================================================================
+   This file ships a complete periodic table with chip-rail filtering, six
+   filter dimensions including Stardust, the floating gap-control panel,
+   the 3D atom viewer with orbital cloud mode, a category legend, fullscreen,
+   and search. Planned work below is grouped by chat session.
+
+   ---------------------------------------------------------------------------
+   NEXT CHAT — TOP-OF-PAGE LAYOUT
+   ---------------------------------------------------------------------------
+   Focus: rework the masthead area. Open questions / planned changes:
+     - Hamburger menu button (top-left), space reserved for it.
+     - Games launcher button (also top-left, next to hamburger). Will open
+       the Periodic Games overlay (see "PERIODIC GAMES SYSTEM" below).
+     - Search bar relocation — currently centered in <header>; planned
+       move TBD. Could go inline with the chip rail, into the masthead
+       chrome, or behind a search icon.
+     - Possible visual rebalancing of the masthead h1, eyebrow, and any
+       new top-area chrome.
+
+   Touchpoints in current code:
+     - <header> in HTML (search input lives here as #search)
+     - <button class="fullscreen-btn" id="fullscreenBtn"> top-right, fixed
+     - .frame is the main page container
+     - applyFilters() reads from #search; preserve that contract during
+       any relocation work.
+
+   ---------------------------------------------------------------------------
+   PERIODIC GAMES SYSTEM (multi-chat build)
+   ---------------------------------------------------------------------------
+   Six game modes that share a common harness. Each makes use of the periodic
+   table as a learning scaffold, with three difficulty levels that progressively
+   remove access to the table as a reference.
+
+   GAME MODES (with assigned brand color for chrome / launcher tile / game bar):
+     1. Elementle      — Wordle-style: guess the secret element, get directional
+                          feedback on 5 properties (atomic#, period, group,
+                          category, state). Color: #6AAA64 (Wordle green).
+                          Icon: row of 5 squares (grey/yellow/green).
+     2. Tinpoint       — Pinpoint-style: 5 clues revealed one at a time,
+                          decreasing in difficulty. Score by how early you guess.
+                          Color: Edwin Purple #7B3FF2.
+                          Icon: 5 horizontal rows in a darkening gradient.
+     3. Eleminator     — Guess Who-style: yes/no questions narrow the field.
+                          Free-form (using anthropic API in artifacts) preferred.
+                          Color: Edwin Red #D9442D.
+                          Icon: tic-tac-toe-like grid with Xs and a check.
+     4. Curie-ousity   — Drag/place elements onto a blank table. Spatial recall.
+                          Color: Amber #F59E0B.
+                          Icon: magnifying glass with question mark.
+     5. Atomic Clock   — Rapid-fire timed symbol/name recall.
+                          Color: Edwin Teal Light #5A9AA8.
+                          Icon: stopwatch.
+     6. Test Tube      — Cloze-style fill-in-the-blank from element descriptions.
+                          Color: Cobalt #1B4FCB.
+                          Icon: lab beaker.
+
+   DIFFICULTY SYSTEM (cross-cutting):
+     - Easy   = full table access + element details, score multiplier 1×
+     - Medium = game-specific limited access (e.g. lookup budgets, symbols
+                only, no detail cards), 2×
+     - Hard   = no table reference at all, 3×
+     Implementation: body class .game-difficulty-easy/medium/hard switches
+     CSS rules to mute, partially-hide, or fully-hide the table. Each game
+     defines its own concrete medium-mode rule when built.
+
+   LAUNCHER UI:
+     - Top-left button (joystick / dice / rocket icon TBD), with reserved
+       space for a hamburger menu next to it.
+     - Click → 2-column × 4-row overlay morphs through three screens:
+         Screen 1: "Choose a game" header + 6 game tiles (2×3 below).
+         Screen 2: Game name + tagline + 3 difficulty rows (Easy/Med/Hard,
+                   each with the per-game rule and multiplier).
+         Screen 3: Full rules + Start Game button (overlay can expand here).
+     - Persistent back arrow top-left during screens 2 and 3.
+     - Closes via outside click, Escape, or × in corner.
+     - Color cascade: chosen game's brand color fills the overlay chrome.
+
+   GAME BAR (during active play):
+     - Persistent strip below masthead. Slots:
+         [Game name + difficulty] [Center: prompt/input] [Score, lives, timer] [Exit ×]
+     - Carries the active game's brand color.
+     - Collapses to ~40px when the user scrolls past the masthead, becoming
+       position:fixed with a soft shadow underneath.
+
+   PERSISTENCE:
+     - Per-game high scores via the artifact storage API (window.storage).
+     - Tracks best score per (game, difficulty) tuple.
+     - Survives page reload. No daily-puzzle / streak system in v1.
+
+   ELEMENT CLICK BEHAVIOR DURING PLAY:
+     - No game active → opens detail modal (current behavior).
+     - Game active + element is a valid input target → fires game's input
+       handler (defined per game).
+     - Game active + reference-only mode → opens modal in easy, no-op in
+       medium/hard.
+
+   BUILD ORDER:
+     1. ✓ DONE — Top-of-page layout: masthead, hamburger, search, games
+        button. The games button is in place (top-left, immediately right
+        of the hamburger, dice icon). It currently opens a small
+        "coming soon" panel (#gamesPanel) anchored below the button — same
+        rhythm as the hamburger panel. When step 2 lands, replace the
+        button click handler, the #gamesPanel markup/CSS, and the
+        open/close helpers in one go with the launcher overlay. The
+        TODO(games-chat-2) marker in the click handler points to the swap.
+     2. Launcher harness + Elementle end-to-end (in one chat).
+     3. Each subsequent game in its own chat, plugging into the harness.
+
+   AUTHORING NOTES:
+     - For Tinpoint: start with ~10 well-known elements fully clue-authored
+       (5 clues each, Tier 1=abstract trivia → Tier 5=common-knowledge).
+       Avoid synthetic / rare-earth elements where cultural footprint is thin.
+     - For Eleminator: free-form questions using anthropic API in artifacts
+       is the better pedagogy ("does it conduct electricity" teaches a lot
+       more than picking from a dropdown). Pre-built question menu is a
+       fallback if the API approach is too unreliable.
+
+   ---------------------------------------------------------------------------
+   WORKFLOW NOTES
+   ---------------------------------------------------------------------------
+   - This file is the source of truth. Each chat session paste-loads it,
+     iterates, and ships a new version. Recommend tagging each shipped
+     version in a git repo to make rollback possible if a chat goes sideways.
+   - Conversation compaction (Settings → adaptive context) can hide earlier
+     parts of a long chat from Claude's context. If this happens mid-build,
+     turn it off and continue. The file on disk is always ground truth;
+     don't trust Claude's memory over the actual code.
+   ============================================================================= */
+</script>
+</body>
+</html>
