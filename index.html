@@ -10,7 +10,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root {
-    /* Edwin core */
+    /* Edwin core — brand colors stay fixed across light/dark modes since
+       they ARE the brand. The exception is --edwin-blue-light: in light
+       mode it's a pale wash, in dark mode it needs to be a deep tint
+       (otherwise it looks blown out against a dark page). */
     --edwin-blue: #4A90E2;
     --edwin-blue-dark: #2E6FBE;
     --edwin-blue-light: #E8F2FC;
@@ -21,15 +24,19 @@
     --edwin-purple: #7B3FF2;
     --edwin-purple-light: #B89BF7;
 
-    /* Surfaces */
+    /* Surfaces (light mode defaults) */
     --bg: #F5F5F7;
     --surface: #FFFFFF;
     --surface-soft: #FAFAFC;
+    --surface-2: #F0F0F3;        /* hover background for light surfaces */
     --ink: #1F2937;
     --ink-soft: #6B7280;
     --ink-muted: #9CA3AF;
     --rule: #E5E7EB;
     --rule-strong: #D1D5DB;
+
+    /* Body dot-grid pattern — tokenized so dark mode can flip the dot color */
+    --dot-color: rgba(31, 41, 55, 0.08);
 
     /* Category palette — mapped to Edwin tones */
     --cat-alkali: #F2A893;             /* warm coral — alkali */
@@ -54,6 +61,43 @@
     --shadow-lg: 0 12px 24px rgba(31, 41, 55, 0.12), 0 4px 8px rgba(31, 41, 55, 0.08);
   }
 
+  /* Dark-mode overrides. Set on <body> via the menu's "Dark mode" toggle.
+     Only the structural tokens (surfaces, inks, rules, shadows, dot grid,
+     and the blue tint accent) flip — brand colors, category palette, and
+     filter palettes stay the same across modes because they ARE the
+     identifying signal of those things.
+
+     The stardust chip, stardust panel, and atom viewer are intentionally
+     dark in BOTH modes and have hardcoded values that don't reference
+     these tokens — they'll look identical in light and dark mode, which
+     is the desired behaviour. */
+  body.dark {
+    --bg: #0F1115;                /* near-black with a slight blue undertone */
+    --surface: #1A1D24;           /* card / panel background */
+    --surface-soft: #15181F;      /* subtler surface for hero strips */
+    --surface-2: #242832;         /* hover state on dark surfaces */
+    --ink: #E8EAED;               /* primary text */
+    --ink-soft: #9AA0A6;          /* secondary text */
+    --ink-muted: #5F6368;         /* tertiary / disabled */
+    --rule: #2A2E37;              /* hairlines */
+    --rule-strong: #3A3F4A;       /* prominent borders */
+
+    /* Dot grid — flipped to white-tinted so it shows on the dark bg */
+    --dot-color: rgba(255, 255, 255, 0.05);
+
+    /* Edwin blue light — in dark mode this is no longer a pale background
+       wash. Make it a deep blue-tinted surface that still reads as
+       "subtly accented" without being garish. */
+    --edwin-blue-light: rgba(74, 144, 226, 0.12);
+
+    /* Shadows — black shadows are nearly invisible in dark mode. Use
+       deeper black with higher alpha so the layered surfaces still feel
+       elevated. The shadow's role here is depth, not contrast. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.35);
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -65,8 +109,10 @@
     padding: 24px 24px 60px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Subtle dot grid background — Edwin's worksheet feel */
-    background-image: radial-gradient(circle, rgba(31, 41, 55, 0.08) 1px, transparent 1px);
+    /* Subtle dot grid background — Edwin's worksheet feel.
+       Color tokenized so dark mode can flip it from dark-on-light to
+       light-on-dark without overriding the whole rule. */
+    background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
     background-size: 20px 20px;
     background-position: 0 0;
   }
@@ -402,7 +448,7 @@
   }
 
   .empty-state-btn:hover {
-    background: var(--surface-2, #f5f5f5);
+    background: var(--surface-2);
     border-color: var(--ink-soft);
     color: var(--ink);
   }
@@ -1610,7 +1656,7 @@
   /* When About is expanded, give its trigger row a faint highlight so the
      visual relationship between trigger and expanded content is obvious. */
   .menu-item[aria-expanded="true"] {
-    background: var(--surface-2, #f5f5f5);
+    background: var(--surface-2);
   }
 
   .menu-item[aria-expanded="true"] .menu-item-icon {
@@ -1638,7 +1684,7 @@
   }
 
   .menu-item:hover {
-    background: var(--surface-2, #f5f5f5);
+    background: var(--surface-2);
   }
 
   .menu-item-icon {
@@ -1702,6 +1748,56 @@
 
   body.is-fullscreen .fullscreen-btn .icon-collapse {
     display: block;
+  }
+
+  /* Right-corner toggle buttons (dark mode, compact view). Mirror the
+     hamburger/games cluster on the left: same 40×40 circle, same hover
+     scale-and-fill treatment, same 8px spacing rhythm. The .is-on class
+     marks an active toggle state — filled blue, inverted color, like a
+     pressed button. The aria-pressed attribute is for assistive tech;
+     .is-on drives the visual state via JS sync. */
+  .corner-toggle {
+    position: fixed;
+    top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  /* Position each toggle by ID so future toggles can claim explicit slots */
+  #darkModeBtn      { right: 68px; }   /* 20 (fullscreen) + 40 + 8 */
+  #compactViewBtn   { right: 116px; }  /* 68 + 40 + 8 */
+
+  .corner-toggle:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Active "on" state — same fill as the hover, but persistent and with
+     no scale change so the button stays anchored in place when toggled. */
+  .corner-toggle.is-on {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  .corner-toggle.is-on:hover {
+    background: var(--edwin-blue-dark);
+    border-color: var(--edwin-blue-dark);
   }
 
   /* "Urging" state on the fullscreen button — paired with the suggestion
@@ -1954,11 +2050,6 @@
     border-top: 1px solid var(--rule);
   }
 
-  footer strong {
-    color: var(--edwin-blue);
-    font-weight: 700;
-  }
-
   /* Responsive */
   @media (max-width: 900px) {
     body { padding: 20px 12px 60px; }
@@ -2005,6 +2096,23 @@
 </style>
 </head>
 <body>
+<script>
+  // Apply dark mode synchronously, before the browser paints any content.
+  // Reads the same key/fallback logic as initDarkMode() but runs as soon
+  // as <body> is parsed — preventing a light-mode flash for users whose
+  // preference is dark. The aria-pressed sync still happens later in
+  // initDarkMode() once the menu DOM exists.
+  (function() {
+    try {
+      var saved = localStorage.getItem('periodic-table-dark-mode');
+      var shouldBeDark;
+      if (saved === '1') shouldBeDark = true;
+      else if (saved === '0') shouldBeDark = false;
+      else shouldBeDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (shouldBeDark) document.body.classList.add('dark');
+    } catch (e) { /* storage blocked — stay light */ }
+  })();
+</script>
 <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-haspopup="true" aria-expanded="false" title="Menu">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 6 H21"/>
@@ -2057,6 +2165,11 @@
       <span class="menu-item-label">Compact view</span>
       <span class="menu-item-check" aria-hidden="true">✓</span>
     </button>
+    <button class="menu-item" data-action="dark" role="menuitem" aria-pressed="false">
+      <span class="menu-item-icon" aria-hidden="true">◐</span>
+      <span class="menu-item-label">Dark mode</span>
+      <span class="menu-item-check" aria-hidden="true">✓</span>
+    </button>
     <button class="menu-item" data-action="reset" role="menuitem">
       <span class="menu-item-icon" aria-hidden="true">↺</span>
       <span class="menu-item-label">Reset all filters</span>
@@ -2093,6 +2206,28 @@
   </svg>
 </button>
 
+<!-- Dark mode toggle — mirrors the menu item, also accessible from the menu.
+     Sits at right:68 (8px gap after fullscreen), matches the left cluster's
+     spacing. Filled blue when active (.is-on class) like a pressed button. -->
+<button class="corner-toggle" id="darkModeBtn" aria-label="Toggle dark mode" aria-pressed="false" title="Dark mode">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- Crescent moon: a circle minus an offset circle. Universal "dark mode" signal. -->
+    <path d="M20 14.5 A8 8 0 1 1 9.5 4 A6.5 6.5 0 0 0 20 14.5 Z" fill="currentColor" stroke="none"/>
+  </svg>
+</button>
+
+<!-- Compact view toggle — mirrors the menu item, also accessible from the menu.
+     Sits at right:116. Same on/off mechanics as the dark-mode button. -->
+<button class="corner-toggle" id="compactViewBtn" aria-label="Toggle compact view" aria-pressed="false" title="Compact view">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- 2×2 grid of small squares — "compact density" iconography -->
+    <rect x="4" y="4" width="7" height="7" rx="1.2"/>
+    <rect x="13" y="4" width="7" height="7" rx="1.2"/>
+    <rect x="4" y="13" width="7" height="7" rx="1.2"/>
+    <rect x="13" y="13" width="7" height="7" rx="1.2"/>
+  </svg>
+</button>
+
 <!-- Fullscreen suggestion toast — appears when an element modal opens and
      its content overflows the viewport (forcing a scrollbar). The toast
      itself is the click target to enter fullscreen; the × dismisses it
@@ -2114,7 +2249,7 @@
   <header>
     <h1>The Periodic Table</h1>
     <div class="eyebrow">Interactive Reference</div>
-    <p class="subtitle">Click any element to learn more, view its atomic structure, and see the orbital model in 3D.</p>
+    <p class="subtitle">Click any of the 118 known elements to learn more and view its structure in 3D.</p>
   </header>
 
   <div class="filter-rail">
@@ -2918,14 +3053,14 @@ const FILTER_CONFIG = {
   year: {
     label: 'Year of Discovery',
     icon: '📅',
-    tip: 'Drag the handles to narrow the timeline. Most of the table was discovered between 1750 and 1950 — chemistry\'s golden era.',
+    tip: 'Drag the handles to narrow the timeline. Most of the table was discovered between 1750 and 1950 — chemistry\'s golden century.',
     getThreshold: (pos) => getYearThreshold(pos),
     activeText: (t) => `Before ${formatYearReadout(t)}`
   },
   density: {
     label: 'Density',
     icon: '⚖',
-    tip: 'Drag the handles to isolate a density range. The densest elements (osmium, iridium, platinum) are clustered together in the middle of the table.',
+    tip: 'Drag the handles to isolate a density range. The densest elements (osmium, iridium, platinum) cluster in one corner of the table.',
     getThreshold: (pos) => getDensityThreshold(pos),
     activeText: (t) => `≤ ${t.toFixed(2)} g/cm³`
   },
@@ -3935,12 +4070,54 @@ function toggleAbout() {
   else expandAbout();
 }
 
+// Helper — sync both UI surfaces (menu item + floating corner button) for
+// a given toggle. The menu uses aria-pressed for state; the corner button
+// uses both aria-pressed (for assistive tech) and the .is-on class (for
+// the visual filled-blue state).
+function syncToggleUI(menuAction, cornerBtnId, on) {
+  const item = document.querySelector(`.menu-item[data-action="${menuAction}"]`);
+  if (item) item.setAttribute('aria-pressed', String(on));
+  const btn = document.getElementById(cornerBtnId);
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(on));
+    btn.classList.toggle('is-on', on);
+  }
+}
+
 function toggleCompactView() {
   const on = document.body.classList.toggle('compact-view');
-  const item = document.querySelector('.menu-item[data-action="compact"]');
-  if (item) item.setAttribute('aria-pressed', String(on));
+  syncToggleUI('compact', 'compactViewBtn', on);
   // Cell heights may have changed (header shrunk); re-pin search bar.
   requestAnimationFrame(positionGapControl);
+}
+
+// Dark mode — flips the body class which switches the design token values
+// (surfaces, inks, rules, shadows, dot grid, accent tint) under the
+// `body.dark` selector. Brand colors, category palette, histogram filter
+// palettes, the stardust panel, and the atom viewer all stay unchanged
+// by design — those elements either ARE the brand signal or are already
+// dark in both modes. Persists the user's choice via localStorage.
+const DARK_MODE_STORAGE_KEY = 'periodic-table-dark-mode';
+
+function toggleDarkMode() {
+  const on = document.body.classList.toggle('dark');
+  syncToggleUI('dark', 'darkModeBtn', on);
+  try {
+    localStorage.setItem(DARK_MODE_STORAGE_KEY, on ? '1' : '0');
+  } catch (e) {
+    // Storage may be unavailable (private mode, blocked, etc.) — toggle
+    // still works for this session, just won't persist on reload.
+  }
+}
+
+// Sync the menu and corner button toggle states to whatever the inline
+// boot script in <body> already decided. The dark class is applied
+// before any paint — this just makes sure the UI controls' active
+// states are correct once the DOM exists.
+function initDarkMode() {
+  if (document.body.classList.contains('dark')) {
+    syncToggleUI('dark', 'darkModeBtn', true);
+  }
 }
 
 // =====================================================
@@ -4424,6 +4601,11 @@ function updateLegend(mode) {
 
 // Wire up
 document.addEventListener('DOMContentLoaded', () => {
+  // Read the saved dark-mode preference (or fall back to OS preference)
+  // BEFORE building anything that paints — avoids a light → dark flash
+  // for users whose preference is dark.
+  initDarkMode();
+
   buildTable();
   buildLegend();
   computeDataRanges();
@@ -4504,6 +4686,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Corner toggle buttons — dark mode and compact view. These mirror the
+  // hamburger-menu items of the same name and call the same handler
+  // functions, so toggling either UI surface keeps both in sync via the
+  // syncToggleUI() helper inside each toggle function.
+  const darkModeBtn = document.getElementById('darkModeBtn');
+  if (darkModeBtn) darkModeBtn.addEventListener('click', toggleDarkMode);
+  const compactViewBtn = document.getElementById('compactViewBtn');
+  if (compactViewBtn) compactViewBtn.addEventListener('click', toggleCompactView);
+
   document.addEventListener('fullscreenchange', () => {
     document.body.classList.toggle('is-fullscreen', !!document.fullscreenElement);
     // Re-pin both gap-control and search bar after fullscreen change since
@@ -4569,9 +4760,9 @@ document.addEventListener('DOMContentLoaded', () => {
     closeMenu();
   });
 
-  // Menu item handlers. About toggles the accordion; Compact toggles the
-  // body class (stays open since user might flip it twice); Reset runs and
-  // closes the menu.
+  // Menu item handlers. About toggles the accordion; Compact and Dark
+  // toggle body classes (stay open since user might flip them twice);
+  // Reset runs and closes the menu.
   document.querySelectorAll('.menu-item').forEach(item => {
     item.addEventListener('click', () => {
       const action = item.dataset.action;
@@ -4579,6 +4770,8 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleAbout();
       } else if (action === 'compact') {
         toggleCompactView();
+      } else if (action === 'dark') {
+        toggleDarkMode();
       } else if (action === 'reset') {
         resetAllFilters();
         closeMenu();
