@@ -1,0 +1,3401 @@
+  :root {
+    /* Edwin core — brand colors stay fixed across light/dark modes since
+       they ARE the brand. The exception is --edwin-blue-light: in light
+       mode it's a pale wash, in dark mode it needs to be a deep tint
+       (otherwise it looks blown out against a dark page). */
+    --edwin-blue: #4A90E2;
+    --edwin-blue-dark: #2E6FBE;
+    --edwin-blue-light: #E8F2FC;
+    --edwin-teal: #1F5F6F;
+    --edwin-teal-light: #5A9AA8;
+    --edwin-red: #D9442D;
+    --edwin-red-light: #F2A893;
+    --edwin-purple: #7B3FF2;
+    --edwin-purple-light: #B89BF7;
+
+    /* Surfaces (light mode defaults) */
+    --bg: #F5F5F7;
+    --surface: #FFFFFF;
+    --surface-soft: #FAFAFC;
+    --surface-2: #F0F0F3;        /* hover background for light surfaces */
+    --ink: #1F2937;
+    --ink-soft: #6B7280;
+    --ink-muted: #9CA3AF;
+    --rule: #E5E7EB;
+    --rule-strong: #D1D5DB;
+
+    /* Body dot-grid pattern — tokenized so dark mode can flip the dot color */
+    --dot-color: rgba(31, 41, 55, 0.08);
+
+    /* Category palette — mapped to Edwin tones */
+    --cat-alkali: #F2A893;             /* warm coral — alkali */
+    --cat-alkaline: #D9442D;           /* Edwin red — alkaline earth */
+    --cat-transition: #2E6FBE;         /* Edwin blue dark — transition */
+    --cat-post-transition: #4A90E2;    /* Edwin blue — post-transition */
+    --cat-metalloid: #5A9AA8;          /* teal-light — metalloids */
+    --cat-nonmetal: #1F5F6F;           /* Edwin teal — nonmetals */
+    --cat-halogen: #F59E0B;            /* warm amber — halogens */
+    --cat-noble: #7B3FF2;              /* Edwin purple — noble gases */
+    --cat-lanthanide: #B89BF7;         /* light purple — lanthanides */
+    --cat-actinide: #5B21B6;           /* deep purple — actinides */
+
+    /* Spacing rhythm — based on 4px grid */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --shadow-sm: 0 1px 2px rgba(31, 41, 55, 0.06), 0 1px 3px rgba(31, 41, 55, 0.08);
+    --shadow-md: 0 4px 8px rgba(31, 41, 55, 0.08), 0 2px 4px rgba(31, 41, 55, 0.06);
+    --shadow-lg: 0 12px 24px rgba(31, 41, 55, 0.12), 0 4px 8px rgba(31, 41, 55, 0.08);
+  }
+
+  /* Dark-mode overrides. Set on <body> via the menu's "Dark mode" toggle.
+     Only the structural tokens (surfaces, inks, rules, shadows, dot grid,
+     and the blue tint accent) flip — brand colors, category palette, and
+     filter palettes stay the same across modes because they ARE the
+     identifying signal of those things.
+
+     The stardust chip, stardust panel, and atom viewer are intentionally
+     dark in BOTH modes and have hardcoded values that don't reference
+     these tokens — they'll look identical in light and dark mode, which
+     is the desired behaviour. */
+  body.dark {
+    --bg: #0F1115;                /* near-black with a slight blue undertone */
+    --surface: #1A1D24;           /* card / panel background */
+    --surface-soft: #15181F;      /* subtler surface for hero strips */
+    --surface-2: #242832;         /* hover state on dark surfaces */
+    --ink: #E8EAED;               /* primary text */
+    --ink-soft: #9AA0A6;          /* secondary text */
+    --ink-muted: #5F6368;         /* tertiary / disabled */
+    --rule: #2A2E37;              /* hairlines */
+    --rule-strong: #3A3F4A;       /* prominent borders */
+
+    /* Dot grid — flipped to white-tinted so it shows on the dark bg */
+    --dot-color: rgba(255, 255, 255, 0.05);
+
+    /* Edwin blue light — in dark mode this is no longer a pale background
+       wash. Make it a deep blue-tinted surface that still reads as
+       "subtly accented" without being garish. */
+    --edwin-blue-light: rgba(74, 144, 226, 0.12);
+
+    /* Shadows — black shadows are nearly invisible in dark mode. Use
+       deeper black with higher alpha so the layered surfaces still feel
+       elevated. The shadow's role here is depth, not contrast. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    padding: 24px 24px 60px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Subtle dot grid background — Edwin's worksheet feel.
+       Color tokenized so dark mode can flip it from dark-on-light to
+       light-on-dark without overriding the whole rule. */
+    background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+  }
+
+  .frame {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Masthead */
+  header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    /* Edwin "Mega" treatment, slightly larger */
+    font-family: 'Nunito', sans-serif;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--edwin-blue);
+    background: var(--edwin-blue-light);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 880px;
+    margin: 0 auto;
+    font-weight: 400;
+  }
+
+  /* Search */
+  /* Search bar — lives inside the upper gap of the periodic table (groups 4-9,
+     periods 1-2). Positioned with the same column-based calc as the gap-control
+     panel, but narrower: ~75% of the gap-control's width (6 columns wide,
+     centered horizontally within the 8-column gap-control band). Vertical
+     position pinned via JS in positionGapControl() so it tracks the same
+     row 1-3 band even as the table resizes.
+
+     z-index 2 so the gap-control (z-index 3) overlays it when a filter panel
+     is open. The empty-state banner sits at z-index 4, above both. */
+  .search {
+    position: absolute;
+    /* 4 cells + 4 gaps in from the table's left edge */
+    left: calc((100% - 17 * 3px) / 18 * 4 + 3px * 4);
+    /* 6 cells + 5 gaps wide */
+    width: calc((100% - 17 * 3px) / 18 * 6 + 3px * 5);
+    z-index: 2;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 2px solid var(--rule);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: left;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .search::placeholder {
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+
+  .search:focus {
+    border-color: var(--edwin-blue);
+    box-shadow: 0 0 0 4px var(--edwin-blue-light);
+  }
+
+  /* ================================================================
+     CHIP RAIL — compact filter affordance above the table
+     ================================================================ */
+  .filter-rail {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--rule);
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    box-shadow: var(--shadow-sm);
+    justify-content: center;
+  }
+
+  /* Lock chip widths so they don't reflow when the active text changes.
+     Each width is sized for the longest label that chip will display. */
+  .filter-chip[data-filter="year"]      { width: 184px; }
+  .filter-chip[data-filter="density"]   { width: 156px; }
+  .filter-chip[data-filter="radius"]    { width: 156px; }
+  .filter-chip[data-filter="abundance"] { width: 184px; }
+  .filter-chip[data-filter="state"]     { width: 184px; }
+  .filter-chip[data-filter="stardust"]  { width: 130px; }
+  .filter-chip-reset                    { width: 96px; }
+
+  .filter-chip .chip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    text-align: center;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--edwin-blue);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .filter-chip.expanded {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  .filter-chip.has-filter {
+    background: var(--edwin-blue-light);
+    border-color: var(--edwin-blue);
+    color: var(--edwin-blue-dark);
+  }
+
+  .filter-chip.has-filter.expanded {
+    background: var(--edwin-blue);
+    color: white;
+  }
+
+  /* === Per-filter chip color treatments ===
+     Each chip's active/has-filter color matches its histogram palette,
+     so the chip and the open histogram visually belong together. */
+
+  /* Year of Discovery — sepia / aged book */
+  .filter-chip[data-filter="year"].expanded,
+  .filter-chip[data-filter="year"].has-filter {
+    background: linear-gradient(135deg, #b8956a 0%, #8a6940 100%);
+    border-color: #5c4022;
+    color: #ffffff;
+  }
+
+  /* Density — battleship metallic blue-grey */
+  .filter-chip[data-filter="density"].expanded,
+  .filter-chip[data-filter="density"].has-filter {
+    background: linear-gradient(135deg, #5e6b7a 0%, #2f3a47 100%);
+    border-color: #1f2730;
+    color: #ffffff;
+  }
+
+  /* Atomic Radius — verdant green */
+  .filter-chip[data-filter="radius"].expanded,
+  .filter-chip[data-filter="radius"].has-filter {
+    background: linear-gradient(135deg, #1ed760 0%, #14a047 100%);
+    border-color: #0a6a2c;
+    color: #ffffff;
+  }
+
+  /* Crust Abundance — dirt brown with a green grass cap on top
+     (matches the Minecraft block treatment of the histogram) */
+  .filter-chip[data-filter="abundance"].expanded,
+  .filter-chip[data-filter="abundance"].has-filter {
+    background:
+      linear-gradient(to bottom, #5fa84a 0px, #5fa84a 5px, transparent 5px),
+      linear-gradient(135deg, #8b5a2b 0%, #6b4220 100%);
+    border-color: #3d2810;
+    color: #ffffff;
+  }
+
+  /* State & Type — deep slate teal, complementing the multi-color state chips inside */
+  .filter-chip[data-filter="state"].expanded,
+  .filter-chip[data-filter="state"].has-filter {
+    background: linear-gradient(135deg, #4a5a6e 0%, #2a3540 100%);
+    border-color: #1a2028;
+    color: #ffffff;
+  }
+
+  /* Stardust chip — deep indigo night sky vibe.
+     Background uses subtle radial-gradients evoking distant stars. */
+  .filter-chip[data-filter="stardust"].expanded,
+  .filter-chip[data-filter="stardust"].has-filter {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.4) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 65% 70%, rgba(255, 255, 255, 0.35) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 85% 25%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.25) 0.5px, transparent 1.5px),
+      linear-gradient(135deg, #1a1454 0%, #2a1f6e 100%);
+    border-color: #1a1454;
+    color: #ffffff;
+  }
+
+  .filter-chip[data-filter="stardust"].expanded .chip-icon-stardust,
+  .filter-chip[data-filter="stardust"].has-filter .chip-icon-stardust {
+    /* Make the sparkle icon glow yellow against the night sky */
+    filter: brightness(1.4) drop-shadow(0 0 4px rgba(255, 220, 100, 0.7));
+  }
+
+  .chip-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .chip-text {
+    line-height: 1;
+  }
+
+  .filter-chip-reset {
+    margin-left: 4px;
+    background: transparent;
+    border-style: dashed;
+    border-color: var(--rule-strong);
+    color: var(--ink-soft);
+    box-shadow: none;
+  }
+
+  .filter-chip-reset:hover {
+    background: var(--edwin-red);
+    border-color: var(--edwin-red);
+    border-style: solid;
+    color: white;
+  }
+
+  .filter-chip-reset:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .filter-chip-reset:disabled:hover {
+    background: transparent;
+    border-color: var(--rule-strong);
+    color: var(--ink-soft);
+    box-shadow: none;
+  }
+
+  /* Empty-state banner — appears as a centered overlay card on top of the
+     periodic table when the active filter combination matches zero elements.
+     Anchored to the centre of `#table` (the main 7-row block); the f-block
+     rows below are visually peripheral, so the centre of the main block
+     reads as "the middle of the periodic table" to most users. Hidden by
+     default via the `hidden` attribute; applyFilters() toggles it. */
+  .empty-state-banner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 18px;
+    min-width: 280px;
+    max-width: 360px;
+    background: var(--surface);
+    border: 1.5px solid var(--edwin-blue);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    color: var(--ink);
+    font-size: 12.5px;
+    line-height: 1.4;
+    animation: emptyStateIn 0.18s ease-out;
+  }
+
+  .empty-state-banner[hidden] {
+    display: none;
+  }
+
+  .empty-state-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .empty-state-icon {
+    font-size: 14px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+
+  .empty-state-text {
+    color: var(--ink);
+  }
+
+  .empty-state-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .empty-state-btn {
+    appearance: none;
+    border: 1px solid var(--rule-strong);
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    font-family: inherit;
+  }
+
+  .empty-state-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--ink-soft);
+    color: var(--ink);
+  }
+
+  .empty-state-btn-primary {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  .empty-state-btn-primary:hover {
+    background: var(--edwin-blue-dark);
+    border-color: var(--edwin-blue-dark);
+    color: white;
+  }
+
+  @keyframes emptyStateIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  /* ================================================================
+     GAP CONTROL — the active filter renders inside the upper gap
+     of the table itself (groups 3-12, periods 1-2)
+     ================================================================ */
+  .gap-control {
+    /* Position is set via JS at runtime (positionGapControl) because CSS
+       percentage math doesn't resolve correctly here — `100%` in top/height
+       refers to parent height, not width, so cell-height calc breaks.
+       JS measures the first element cell and pins the panel's top/height
+       to fractions of that cell height, so the panel sits floating between
+       the middle of row 1 and the middle of row 3. */
+    position: absolute;
+    left: calc((100% - 17 * 3px) / 18 * 3 + 3px * 3);
+    width: calc((100% - 17 * 3px) / 18 * 8 + 3px * 7);
+    background: var(--surface);
+    border: 1.5px solid var(--edwin-blue);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+    z-index: 3;
+    box-sizing: border-box;
+    animation: gapControlIn 0.18s ease-out;
+  }
+
+  .gap-control[hidden] {
+    display: none;
+  }
+
+  @keyframes gapControlIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .gap-control-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .gap-control-icon {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .gap-control-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Compact histogram fitted inside the gap */
+  .histo-chart {
+    position: relative;
+    flex: 1;
+    user-select: none;
+    min-height: 0;
+  }
+
+  .histo-bars {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  .histo-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: background 0.15s ease, opacity 0.15s ease;
+  }
+
+  /* Default histogram colors (used when no per-filter override applies) */
+  .histo-bar.below-threshold {
+    background: var(--edwin-blue);
+    opacity: 1;
+  }
+
+  .histo-bar.above-threshold {
+    background: var(--rule-strong);
+    opacity: 0.55;
+  }
+
+  /* === Per-filter histogram color treatments ===
+     Each filter has its own palette evoking what the filter measures.
+     Year of Discovery: aged sepia / parchment
+     Density: dark metallic blue-grey (battleship)
+     Atomic Radius: deep verdant green
+     Crust Abundance: dirt brown with a grass cap (like a Minecraft block)
+     */
+
+  /* Year of Discovery — sepia / aged book */
+  .gap-control[data-active-filter="year"] .histo-bar.below-threshold {
+    background: linear-gradient(to bottom, #b8956a 0%, #8a6940 100%);
+  }
+  .gap-control[data-active-filter="year"] .histo-bar.above-threshold {
+    background: #d9cdb8;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="year"] .histo-thumb {
+    background: #5c4022;
+  }
+  .gap-control[data-active-filter="year"] .histo-thumb::before {
+    background: #8a6940;
+  }
+
+  /* Density — battleship metallic blue-grey */
+  .gap-control[data-active-filter="density"] .histo-bar.below-threshold {
+    background: linear-gradient(to bottom, #5e6b7a 0%, #2f3a47 100%);
+  }
+  .gap-control[data-active-filter="density"] .histo-bar.above-threshold {
+    background: #c0c8d0;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="density"] .histo-thumb {
+    background: #1f2730;
+  }
+  .gap-control[data-active-filter="density"] .histo-thumb::before {
+    background: #4a5563;
+  }
+
+  /* Atomic Radius — verdant green (Spotify-ish) */
+  .gap-control[data-active-filter="radius"] .histo-bar.below-threshold {
+    background: linear-gradient(to bottom, #1ed760 0%, #14a047 100%);
+  }
+  .gap-control[data-active-filter="radius"] .histo-bar.above-threshold {
+    background: #c5e8d2;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="radius"] .histo-thumb {
+    background: #0a6a2c;
+  }
+  .gap-control[data-active-filter="radius"] .histo-thumb::before {
+    background: #14a047;
+  }
+
+  /* Crust Abundance — Minecraft-style dirt with a grass cap.
+     Brown column with a 4px green strip at the top. */
+  .gap-control[data-active-filter="abundance"] .histo-bar.below-threshold {
+    background:
+      linear-gradient(to bottom, #5fa84a 0px, #5fa84a 4px, transparent 4px),
+      linear-gradient(to bottom, #8b5a2b 0%, #6b4220 100%);
+  }
+  .gap-control[data-active-filter="abundance"] .histo-bar.above-threshold {
+    background: #d8c8b0;
+    opacity: 0.7;
+  }
+  .gap-control[data-active-filter="abundance"] .histo-thumb {
+    background: #3d2810;
+  }
+  .gap-control[data-active-filter="abundance"] .histo-thumb::before {
+    background: #6b4220;
+  }
+
+  /* Stardust gap-control — deep indigo night sky with subtle starfield.
+     Chips for each cosmic origin take a color that evokes that process. */
+  .gap-control[data-active-filter="stardust"] {
+    background:
+      radial-gradient(circle at 12% 20%, rgba(255, 255, 255, 0.35) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 28% 65%, rgba(255, 240, 180, 0.45) 0.6px, transparent 1.8px),
+      radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.3) 0.4px, transparent 1.2px),
+      radial-gradient(circle at 72% 75%, rgba(255, 255, 255, 0.4) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 88% 22%, rgba(200, 220, 255, 0.5) 0.6px, transparent 1.8px),
+      radial-gradient(circle at 18% 88%, rgba(255, 255, 255, 0.25) 0.4px, transparent 1.2px),
+      radial-gradient(circle at 60% 92%, rgba(255, 255, 255, 0.3) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 95% 55%, rgba(255, 240, 180, 0.4) 0.5px, transparent 1.5px),
+      radial-gradient(circle at 38% 8%, rgba(255, 255, 255, 0.35) 0.5px, transparent 1.5px),
+      linear-gradient(135deg, #0d0a35 0%, #1a1454 60%, #2a1f6e 100%);
+    border-color: #1a1454;
+    color: #f5f3ff;
+  }
+
+  .gap-control[data-active-filter="stardust"] .gap-control-label {
+    color: #fff;
+  }
+
+  .gap-control[data-active-filter="stardust"] .gap-control-icon {
+    filter: drop-shadow(0 0 6px rgba(255, 220, 100, 0.8));
+  }
+
+  .gap-control[data-active-filter="stardust"] .gap-control-explainer {
+    color: rgba(245, 243, 255, 0.75);
+    -webkit-line-clamp: unset;
+    display: block;
+  }
+
+  /* Two-part stardust explainer: bold centered prompt on top, dynamic body below.
+     The prompt stays constant; the body changes based on which origin is selected. */
+  .stardust-prompt {
+    font-weight: 700;
+    text-align: center;
+    color: rgba(255, 235, 180, 0.95);
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stardust-body {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+
+  /* Two-part state explainer — same structure as stardust, but on the
+     default light theme. Bold prompt up top, dynamic body below. */
+  .state-prompt {
+    font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .state-body {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+
+  /* Stardust origin chips — each gets a color matching its cosmic process */
+  .gap-control[data-active-filter="stardust"] .stardust-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: rgba(245, 243, 255, 0.85);
+  }
+
+  /* Hover only applies to *non-active* chips so it doesn't conceal the active color */
+  .gap-control[data-active-filter="stardust"] .stardust-chip:not(.active):hover {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Per-process active colors. Selectors are nested under the gap-control to
+     match the specificity of the base/hover rules above, so the active color
+     wins reliably. */
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="bigbang"].active {
+    background: #ff6b35; border-color: #ff6b35; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="cosmicray"].active {
+    background: #c084fc; border-color: #c084fc; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="smallstars"].active {
+    background: #fbbf24; border-color: #fbbf24; color: #4a2800;
+  }
+  /* Massive stars: light blue — like a young blue supergiant (Rigel, etc.) */
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="bigstars"].active {
+    background: #60a5fa; border-color: #60a5fa; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="supernova"].active {
+    background: #ef4444; border-color: #ef4444; color: white;
+  }
+  /* Neutron-star merger: warm orange */
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="merger"].active {
+    background: #f97316; border-color: #f97316; color: white;
+  }
+  .gap-control[data-active-filter="stardust"] .stardust-chip[data-origin="synthetic"].active {
+    background: #a3a3a3; border-color: #a3a3a3; color: #1a1a1a;
+  }
+
+  .histo-drag {
+    position: absolute;
+    /* Extend the hit zone past the chart in all four directions so the thumb
+       circle stays fully grabbable at both ends of the slider. The horizontal
+       extension matters most: at 0% / 100% the circle's outer half sits past
+       the chart edge, otherwise overlapping the gap-control's inner border. */
+    inset: -8px -12px -10px -12px;
+    cursor: grab;
+  }
+
+  .histo-drag:active {
+    cursor: grabbing;
+  }
+
+  .histo-thumb {
+    position: absolute;
+    top: 6px;     /* aligned to chart top once drag layer is extended */
+    bottom: 8px;
+    width: 2px;
+    background: var(--edwin-blue-dark);
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  /* Visible thumb circle — bigger and more prominent */
+  .histo-thumb::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    background: var(--edwin-blue);
+    border: 3px solid white;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 2px 6px rgba(74, 144, 226, 0.4), var(--shadow-sm);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  /* Larger invisible hit zone around the thumb for easier grabbing */
+  .histo-thumb::after {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    pointer-events: none; /* the parent .histo-drag handles pointer events */
+  }
+
+  /* Thumb is a sibling of .histo-drag (not a child), so we use the
+     general-sibling combinator to drive hover/active feedback on the
+     visual circle from the drag layer. */
+  .histo-drag:hover ~ .histo-thumb::before {
+    transform: translateX(-50%) scale(1.15);
+    box-shadow: 0 3px 10px rgba(74, 144, 226, 0.5), var(--shadow-md);
+  }
+
+  .histo-drag:active ~ .histo-thumb::before {
+    transform: translateX(-50%) scale(1.05);
+  }
+
+  /* Mile markers — small numeric tick labels below the chart at 0/25/50/75/100%
+     of the slider range. Existing every histogram so users know exactly what
+     real-world value sits at each position. Absolutely positioned so each
+     label can center on its tick (with edge alignment for 0% and 100% so the
+     end labels don't fall off the chart). */
+  .histo-markers {
+    position: relative;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .histo-marker {
+    position: absolute;
+    top: 0;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  /* Edge alignment so the end labels stay inside the chart bounds */
+  .histo-marker[data-pos="0"]   { left: 0; }
+  .histo-marker[data-pos="100"] { right: 0; }
+  /* Middle markers center on their position via JS-set left + transform */
+
+  /* Unit suffix on the rightmost marker — lighter and slightly smaller
+     than the numeric value, so the unit reads as a label rather than
+     more data. Convention: number labels run along the axis, unit shows
+     once at the end. */
+  .histo-marker-unit {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-left: 1px;
+  }
+
+  /* Tiny tick mark above each label connecting visually to the chart */
+  .histo-marker::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: 1px;
+    height: 3px;
+    background: var(--rule-strong);
+    margin-bottom: 1px;
+    transform: translateX(-50%);
+  }
+  .histo-marker[data-pos="0"]::before   { left: 0;   transform: none; }
+  .histo-marker[data-pos="100"]::before { left: auto; right: 0; transform: none; }
+
+  /* Always-visible explainer text below the slider/buttons */
+  .gap-control-explainer {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-top: 4px;  }
+
+  /* State filter inline controls (for the State chip) — fit in narrow gap */
+  .state-controls {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    align-items: center;
+    justify-content: stretch;
+    flex-shrink: 0;
+    min-height: 28px;
+  }
+
+  .state-controls .toggle-chip {
+    padding: 5px 6px;
+    font-size: 10.5px;
+    flex: 1 1 0;
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  /* Visual separator between mutually-exclusive phase chips
+     (Solid/Liquid/Gas — radio behavior) and the orthogonal flag chips
+     (Synthetic, Radioactive — independent toggles). */
+  .state-controls .state-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    width: 1px;
+    background: var(--rule-strong);
+    margin: 4px 2px;
+    border-radius: 1px;
+  }
+
+  .toggle-chip {
+    padding: 6px 13px;
+    border: 1.5px solid var(--rule);
+    background: var(--surface);
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .toggle-chip:hover {
+    border-color: var(--ink-muted);
+  }
+
+  .toggle-chip.active {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  /* Per-state colors when active — each evokes its physical state.
+     Solid: dark graphite (almost black)
+     Liquid: deep ocean blue
+     Gas: pale sky blue with dark blue text (only chip with non-white text)
+     Synthetic: AI-lab purple
+     Radioactive: keeps Edwin red */
+  .toggle-chip[data-state="solid"].active {
+    background: #2a2d33;
+    border-color: #2a2d33;
+    color: white;
+  }
+  .toggle-chip[data-state="liquid"].active {
+    background: #1f4a7a;
+    border-color: #1f4a7a;
+    color: white;
+  }
+  .toggle-chip[data-state="gas"].active {
+    background: #c8e0f4;
+    border-color: #8fb8d8;
+    color: #1f4a7a;
+  }
+  .toggle-chip[data-flag="synthetic"].active {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: white;
+  }
+
+  .toggle-chip[data-flag="radioactive"].active {
+    background: var(--edwin-red);
+    border-color: var(--edwin-red);
+  }
+
+  /* Element greyscale state for slider filtering */
+  .element.faded {
+    filter: grayscale(0.85) opacity(0.25);
+    border-left-color: var(--ink-muted) !important;
+  }
+
+  .element.faded:hover {
+    filter: grayscale(0) opacity(1);
+  }
+
+  /* Legend below the table — horizontal reference pattern */
+  .legend-below {
+    margin-top: 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .legend-below-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    padding-left: 8px;
+    border-left: 3px solid var(--edwin-purple);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    flex: 1;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 9px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    transition: all 0.12s ease;
+    user-select: none;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .legend-item:hover {
+    background: var(--bg);
+    border-color: var(--ink-muted);
+  }
+
+  .legend-item.dimmed {
+    opacity: 0.35;
+  }
+
+  .legend-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+
+  /* Periodic Table Grid */
+  .table {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 3px;
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  .lanthanide-row, .actinide-row {
+    display: grid;
+    grid-template-columns: repeat(18, 1fr);
+    gap: 3px;
+    margin-bottom: 3px;
+  }
+
+  .lanthanide-row { margin-top: 10px; }
+
+  .element {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--cat-color, var(--ink-muted));
+    padding: 3px 2px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    overflow: hidden;
+  }
+
+  .element:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    z-index: 5;
+    border-color: var(--cat-color, var(--ink-muted));
+  }
+
+  .element.dimmed {
+    opacity: 0.25;
+  }
+
+  .element.placeholder {
+    border: none;
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .number {
+    font-size: clamp(7px, 0.75vw, 10px);
+    font-weight: 700;
+    color: var(--ink-muted);
+    line-height: 1;
+  }
+
+  .symbol {
+    font-weight: 800;
+    font-size: clamp(15px, 1.7vw, 22px);
+    line-height: 1;
+    text-align: center;
+    color: var(--ink);
+    margin: auto 0;
+    letter-spacing: -0.01em;
+  }
+
+  .name {
+    font-size: clamp(5px, 0.55vw, 8px);
+    font-weight: 600;
+    text-align: center;
+    color: var(--ink-soft);
+    line-height: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mass {
+    font-size: clamp(5px, 0.5vw, 7px);
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-align: center;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* Series indicator markers */
+  .series-marker {
+    aspect-ratio: 1 / 1;
+    border: 2px dashed var(--rule-strong);
+    border-radius: var(--radius-md);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 41, 55, 0.55);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .modal-backdrop.active {
+    display: flex;
+    opacity: 1;
+  }
+
+  .modal {
+    background: var(--surface-soft);
+    max-width: 880px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: var(--radius-xl);
+    border-left: 6px solid var(--cat-color, var(--edwin-blue));
+    box-shadow: var(--shadow-lg);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    position: relative;
+  }
+
+  .modal-backdrop.active .modal {
+    transform: translateY(0);
+  }
+
+  /* ================================================================
+     ELEMENT MODAL — two-zone layout
+     Zone 1 (.modal-header): identity left + properties grid right.
+     Zone 2 (.modal-body):   atom viewer left + description right.
+     Mobile breakpoint collapses both zones to single column.
+     ================================================================ */
+
+  .modal-header {
+    display: grid;
+    grid-template-columns: 38% 62%;
+    gap: 28px;
+    padding: 22px 32px 18px;
+    position: relative;
+    align-items: stretch;
+  }
+
+  /* Left column of the hero — element identity */
+  .modal-identity {
+    display: flex;
+    flex-direction: column;
+    padding-right: 56px; /* keep clear of the close button */
+  }
+
+  .modal-meta {
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+    gap: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  .modal-meta .dot {
+    color: var(--ink-muted);
+  }
+
+  .modal-symbol {
+    font-weight: 900;
+    font-size: 80px;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+
+  .modal-name {
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+
+  .modal-category-tag {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 5px 11px;
+    background: var(--cat-color);
+    color: white;
+    border-radius: 999px;
+    margin-top: 10px;
+  }
+
+  /* Right column of the hero — properties grid.
+     6 short cells in a 2×3 layout, with a doublewide bottom row that
+     combines "Discovered by" + "Year" into a natural-language sentence.
+     align-content: space-between stretches the rows to fill the column
+     height (which is governed by the identity column on the left), so
+     the doublewide factoid pins to the bottom edge of the hero — no
+     awkward empty space between the boiling-point row and the factoid. */
+  .properties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 0;
+    align-content: space-between;
+    height: 100%;
+  }
+
+  .prop {
+    padding: 8px 0;
+    border-top: 1px solid var(--rule);
+    min-width: 0; /* let content shrink rather than push the grid wider */
+  }
+
+  /* The first row's two cells don't need a top border —
+     the hero's bottom edge already serves that purpose visually. */
+  .prop:nth-child(1),
+  .prop:nth-child(2) {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .prop-doublewide {
+    grid-column: 1 / -1;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--rule);
+    margin-top: 6px;
+  }
+
+  .prop-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+
+  .prop-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.25;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Electron-configuration value renders smaller — the [Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶
+     case is long and needs to fit a single column without breaking awkwardly. */
+  .prop-value.prop-config {
+    font-size: 13px;
+    letter-spacing: -0.005em;
+  }
+
+  .prop-value .unit {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    margin-left: 3px;
+  }
+
+  /* Discovered-by sentence — prose, not data, so it gets a different weight
+     treatment. The discoverer name + year are emphasized; surrounding
+     connector words ("Discovered by", "in") are lighter. */
+  .prop-discovered {
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+
+  .prop-discovered strong {
+    font-weight: 700;
+  }
+
+  /* Wikipedia link wrapping the discoverer name. Subtle — underline only on
+     hover so the sentence doesn't read as a busy hyperlinked phrase. */
+  .prop-discovered a {
+    color: var(--edwin-blue);
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.12s ease, color 0.12s ease;
+  }
+
+  .prop-discovered a:hover,
+  .prop-discovered a:focus {
+    border-bottom-color: var(--edwin-blue);
+    color: var(--edwin-blue-dark);
+  }
+
+  /* ================================================================
+     Body zone — description strip on top, atom viewer full-width below.
+     Both are floating elements over the modal's --surface-soft canvas.
+     ================================================================ */
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 32px 22px;
+  }
+
+  .description {
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    font-weight: 400;
+    padding: 11px 16px;
+    background: var(--edwin-blue-light);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--edwin-blue);
+  }
+
+  /* Floating fullscreen button — always available */
+  .fullscreen-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  /* Hamburger menu button — mirrors the fullscreen button on the opposite
+     corner (top-left vs top-right). Same dimensions, same circular treatment,
+     same z-index so both float above the table together. */
+  .menu-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  .menu-btn:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Games launcher button — same circular treatment as the hamburger so
+     the corner cluster reads as one toolbar, but with a hover that rolls
+     the die slightly to hint at the playful behaviour behind it. The
+     8px gap matches the spacing the menu panel uses below its trigger,
+     so the corner has consistent rhythm. */
+  .games-btn {
+    position: fixed;
+    top: 20px;
+    left: 68px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  .games-btn:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Dice tilts ~14° on hover — subtle nod to "let's roll" without being
+     animated-icon-busy. The transition lives on the SVG so only the icon
+     rotates while the button itself does its scale lift in parallel. */
+  .games-btn svg {
+    transition: transform 0.18s ease;
+  }
+
+  .games-btn:hover svg {
+    transform: rotate(-14deg);
+  }
+
+  /* =============================================================================
+     PERIODIC GAMES — LAUNCHER OVERLAY (Phase A3)
+     =============================================================================
+     Compact flyout anchored to the games button, mirroring the
+     hamburger menu's pattern. NOT a centered modal — this is a peer of
+     .menu-panel in the corner cluster, just wider to fit the 2x3 tile
+     grid. Three-screen state machine:
+
+       Screen 1: 6 game tiles in a 2×3 grid
+       Screen 2: Difficulty picker for selected game (Phase A4)
+       Screen 3: Full rules + Start Game button (Phase A4)
+
+     Behavior matches the hamburger menu: no backdrop, click-outside-
+     to-close, Escape-to-close, mutual exclusion with the menu panel
+     (only one corner-cluster flyout open at a time).
+     ----------------------------------------------------------------------------- */
+
+  /* The launcher panel — anchored top-left to the games button column.
+     Same top: 68px (button at 20 + 40 height + 8 gap) as the hamburger
+     menu. Wider than the menu (480px vs 260px) since it holds the 2x3
+     tile grid with taglines.
+
+     Top-LEFT-corner-anchored on purpose so it visually grows out of the
+     games button position. The button itself is at left: 68px (immediately
+     right of the hamburger). The panel hangs from left: 20px (aligned
+     with the hamburger column) which lets the games button sit just
+     above the panel's upper edge, reinforcing the "this opened from
+     that button" relationship.
+
+     Z-index 91 matches the hamburger menu — only one of these is ever
+     open at a time so they don't z-stack against each other. */
+  .launcher {
+    position: fixed;
+    top: 68px;
+    left: 20px;
+    width: 480px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 91;
+    overflow: hidden;
+    animation: menuPanelIn 0.16s ease-out;
+    /* Brand color for screens 2/3 cascade — set inline by JS when a
+       game is selected. Default to Edwin blue. */
+    --launcher-color: var(--edwin-blue);
+  }
+  .launcher[hidden] {
+    display: none;
+  }
+
+  /* Header strip — holds the back arrow (hidden on screen 1), the
+     screen title, and the close ×. Same paddings as menu items so the
+     vertical rhythm reads as related to the hamburger menu. */
+  .launcher-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .launcher.has-selection .launcher-header {
+    box-shadow: inset 0 -3px 0 0 var(--launcher-color);
+  }
+
+  .launcher-back {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s ease, color 0.12s ease;
+    flex: 0 0 auto;
+  }
+  .launcher.screen-2 .launcher-back,
+  .launcher.screen-3 .launcher-back {
+    display: inline-flex;
+  }
+  .launcher-back:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  .launcher-title-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .launcher-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .launcher-subtitle {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-top: 1px;
+    line-height: 1.2;
+  }
+
+  .launcher-close {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    transition: background 0.12s ease, color 0.12s ease;
+    flex: 0 0 auto;
+  }
+  .launcher-close:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  /* Body — content area swapping between screens. Compact padding
+     (12px) matches the menu's tight feel. */
+  .launcher-body {
+    padding: 12px;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+  }
+
+  .launcher-screen {
+    display: none;
+  }
+  .launcher.screen-1 .launcher-screen[data-screen="1"],
+  .launcher.screen-2 .launcher-screen[data-screen="2"],
+  .launcher.screen-3 .launcher-screen[data-screen="3"] {
+    display: block;
+  }
+
+  /* Screen 1: 2×3 grid of game tiles. */
+  .launcher-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  /* Game tile — colored stripe on the left, icon block, name, tagline.
+     Compact padding matches the flyout's overall density. */
+  .launcher-tile {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 10px 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--tile-color, var(--edwin-blue));
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    position: relative;
+  }
+  .launcher-tile:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    background: var(--surface-soft);
+  }
+  .launcher-tile:focus-visible {
+    outline: 2px solid var(--tile-color, var(--edwin-blue));
+    outline-offset: 1px;
+  }
+
+  /* Coming-soon tiles — slightly muted but still clickable (they
+     advance to a dead-end screen, which is the intentional UX). */
+  .launcher-tile.is-coming-soon {
+    opacity: 0.7;
+  }
+  .launcher-tile.is-coming-soon:hover {
+    opacity: 0.85;
+    transform: none;
+  }
+
+  .launcher-tile-icon {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--tile-color, var(--edwin-blue));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .launcher-tile-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .launcher-tile-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .launcher-tile-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+    line-height: 1.15;
+  }
+
+  .launcher-tile-soon {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    padding: 1px 5px;
+    border-radius: 999px;
+  }
+
+  .launcher-tile-tagline {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+    /* Hard-cap at 2 lines so the 6 tiles always have predictable
+       heights. If a tagline is too long it clips with an ellipsis;
+       authoring-time we should be aiming for ≤2 lines anyway. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Mobile — collapse to 1 column, narrower panel */
+  @media (max-width: 600px) {
+    .launcher {
+      width: calc(100vw - 40px);
+      left: 20px;
+    }
+    .launcher-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* =============================================================================
+     LAUNCHER — SCREEN 2 (Difficulty picker)
+     =============================================================================
+     Three vertically-stacked rows, one per difficulty. Each row carries a
+     subtle accent in the selected game's brand color (--launcher-color)
+     so the cascade feels continuous from screen 1's tile selection.
+
+     Layout per row: [icon block] [name + multiplier] [→]
+                      ↳ short rule beneath name + multiplier
+     ----------------------------------------------------------------------------- */
+  .difficulty-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .difficulty-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 10px 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--diff-color, var(--ink-muted));
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+  }
+  .difficulty-row:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+    background: var(--surface-soft);
+  }
+  .difficulty-row:focus-visible {
+    outline: 2px solid var(--launcher-color);
+    outline-offset: 1px;
+  }
+
+  /* Difficulty-specific accent colors layered with the per-game brand
+     color. Easy = blue (calm), Medium = amber (caution), Hard = red
+     (intensity). Same semantic palette as a difficulty meter. */
+  .difficulty-row[data-difficulty="easy"]   { --diff-color: var(--edwin-blue); }
+  .difficulty-row[data-difficulty="medium"] { --diff-color: #F59E0B; }
+  .difficulty-row[data-difficulty="hard"]   { --diff-color: var(--edwin-red); }
+
+  .difficulty-icon {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--diff-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .difficulty-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .difficulty-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.15;
+  }
+
+  .difficulty-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+
+  /* Multiplier badge — small pill that uses the difficulty's color so
+     it reads as part of that row, not as a separate UI chrome. */
+  .difficulty-mult {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: var(--diff-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+
+  .difficulty-rule {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--ink-soft);
+    /* Cap at 2 lines so all 3 rows have predictable heights. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Right-pointing chevron at the end of each row — affordance that the
+     row is going somewhere (advances to screen 3). Subtle in default,
+     brightens to brand color on hover. */
+  .difficulty-chevron {
+    flex: 0 0 auto;
+    color: var(--ink-muted);
+    transition: color 0.12s ease, transform 0.12s ease;
+  }
+  .difficulty-row:hover .difficulty-chevron {
+    color: var(--launcher-color);
+    transform: translateX(2px);
+  }
+
+  /* =============================================================================
+     LAUNCHER — SCREEN 3 (Rules + Start)
+     =============================================================================
+     Full rule statement followed by a prominent Start Game button in the
+     game's brand color. If a saved best score exists for this (game,
+     difficulty) tuple, it appears above the Start button as a small pill.
+     ----------------------------------------------------------------------------- */
+  .rules-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Difficulty header on screen 3 — small pip showing which difficulty
+     was just chosen, with the multiplier alongside. Sits above the
+     full rule text as a visual anchor. */
+  .rules-difficulty-pip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px 3px 6px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .rules-difficulty-pip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--diff-color, var(--ink-muted));
+  }
+  .rules-difficulty-pip[data-difficulty="easy"]   { --diff-color: var(--edwin-blue); }
+  .rules-difficulty-pip[data-difficulty="medium"] { --diff-color: #F59E0B; }
+  .rules-difficulty-pip[data-difficulty="hard"]   { --diff-color: var(--edwin-red); }
+
+  .rules-text {
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink);
+    /* Keep the rules paragraph readable even on narrow widths. */
+    max-width: 56ch;
+  }
+
+  /* Best score pill — only shown when storage has a value for this
+     (game, difficulty) combo. Sits above the Start button. */
+  .rules-best {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .rules-best-value {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  /* Start Game button — brand color, full-width within the rules pane,
+     prominent enough to read as the obvious next action. */
+  .rules-start {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--launcher-color);
+    color: white;
+    border: 0;
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    box-shadow: var(--shadow-sm);
+  }
+  .rules-start:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    filter: brightness(1.05);
+  }
+  .rules-start:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+    filter: brightness(0.95);
+  }
+
+  /* Coming-soon screen 3 placeholder — not used by ready games but
+     gives the dead-end branch a softer landing if we ever route
+     coming-soon games through screen 3 in the future. */
+  .rules-coming-soon {
+    text-align: center;
+    padding: 12px;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+
+  /* Menu panel — anchored just below the hamburger button. Uses fixed
+     positioning so it scrolls with the button, not the page content.
+     z-index 91 so it sits above the button itself when both are visible. */
+  .menu-panel {
+    position: fixed;
+    top: 68px;
+    left: 20px;
+    width: 260px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 91;
+    overflow: hidden;
+    animation: menuPanelIn 0.16s ease-out;
+  }
+
+  .menu-panel[hidden] {
+    display: none;
+  }
+
+  @keyframes menuPanelIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .menu-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* About section — collapsed accordion by default. The grid-template-rows
+     0fr → 1fr trick animates the height to the natural content size with
+     no magic max-height ceiling, and the inner wrapper's overflow:hidden
+     keeps content clipped during the transition. */
+  .menu-about {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.22s ease, border-top-color 0.22s ease;
+    border-top: 1px solid var(--rule);
+  }
+
+  .menu-about.expanded {
+    grid-template-rows: 1fr;
+  }
+
+  /* When collapsed, the border-top would still show as a stray line above
+     zero content — hide it until the section starts opening. */
+  .menu-about:not(.expanded) {
+    border-top-color: transparent;
+  }
+
+  .menu-about-inner {
+    overflow: hidden;
+    padding: 0 16px;
+    transition: padding 0.22s ease;
+  }
+
+  .menu-about.expanded .menu-about-inner {
+    padding: 14px 16px 14px;
+  }
+
+  .menu-about-title {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .menu-about p {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  .menu-about-note {
+    font-size: 11.5px !important;
+    font-style: italic;
+    color: var(--ink-muted) !important;
+  }
+
+  /* Hide button — sits at the bottom of the expanded About section.
+     Subtle, link-like; the up arrow signals "fold this back up". */
+  .menu-hide {
+    background: transparent;
+    border: 0;
+    padding: 4px 0 0;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-family: 'Nunito', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease;
+  }
+
+  .menu-hide:hover {
+    color: var(--edwin-blue);
+  }
+
+  /* When About is expanded, give its trigger row a faint highlight so the
+     visual relationship between trigger and expanded content is obvious. */
+  .menu-item[aria-expanded="true"] {
+    background: var(--surface-2);
+  }
+
+  .menu-item[aria-expanded="true"] .menu-item-icon {
+    color: var(--edwin-blue);
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+
+  .menu-item:last-child {
+    border-bottom: 0;
+  }
+
+  .menu-item:hover {
+    background: var(--surface-2);
+  }
+
+  .menu-item-icon {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  .menu-item-label {
+    flex: 1;
+    line-height: 1.2;
+  }
+
+  .menu-item-check {
+    flex-shrink: 0;
+    color: var(--edwin-blue);
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  .menu-item[aria-pressed="true"] .menu-item-check {
+    opacity: 1;
+  }
+
+  /* Compact view — toggled from the menu. Hides the eyebrow + subtitle and
+     tightens the H1 so the table fills more of the viewport. The header
+     element itself stays so the title still anchors the page. */
+  body.compact-view .eyebrow,
+  body.compact-view .subtitle {
+    display: none;
+  }
+
+  body.compact-view header {
+    margin-bottom: 12px;
+  }
+
+  body.compact-view h1 {
+    font-size: 28px;
+    margin-bottom: 0;
+  }
+
+  .fullscreen-btn:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  .fullscreen-btn .icon-collapse {
+    display: none;
+  }
+
+  /* When in fullscreen, swap icons */
+  body.is-fullscreen .fullscreen-btn .icon-expand {
+    display: none;
+  }
+
+  body.is-fullscreen .fullscreen-btn .icon-collapse {
+    display: block;
+  }
+
+  /* Right-corner toggle buttons (dark mode, compact view). Mirror the
+     hamburger/games cluster on the left: same 40×40 circle, same hover
+     scale-and-fill treatment, same 8px spacing rhythm. The .is-on class
+     marks an active toggle state — filled blue, inverted color, like a
+     pressed button. The aria-pressed attribute is for assistive tech;
+     .is-on drives the visual state via JS sync. */
+  .corner-toggle {
+    position: fixed;
+    top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+  }
+
+  /* Position each toggle by ID so future toggles can claim explicit slots */
+  #darkModeBtn      { right: 68px; }   /* 20 (fullscreen) + 40 + 8 */
+  #compactViewBtn   { right: 116px; }  /* 68 + 40 + 8 */
+
+  .corner-toggle:hover {
+    background: var(--edwin-blue);
+    color: white;
+    border-color: var(--edwin-blue);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Active "on" state — same fill as the hover, but persistent and with
+     no scale change so the button stays anchored in place when toggled. */
+  .corner-toggle.is-on {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  .corner-toggle.is-on:hover {
+    background: var(--edwin-blue-dark);
+    border-color: var(--edwin-blue-dark);
+  }
+
+  /* "Urging" state on the fullscreen button — paired with the suggestion
+     toast. A subtle two-part pulse: an --edwin-blue box-shadow glow that
+     breathes outward, and a tiny scale tick. Slow cycle (~1.6s) so it reads
+     as breathing rather than blinking. The animation pauses on hover so the
+     existing :hover transform (scale 1.05) takes over cleanly without
+     fighting the keyframe transform. */
+  @keyframes fullscreenUrge {
+    0%, 100% {
+      box-shadow:
+        var(--shadow-sm),
+        0 0 0 0 rgba(74, 144, 226, 0.4);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow:
+        var(--shadow-md),
+        0 0 0 8px rgba(74, 144, 226, 0);
+      transform: scale(1.04);
+    }
+  }
+
+  .fullscreen-btn.urging {
+    animation: fullscreenUrge 1.6s ease-in-out infinite;
+    border-color: var(--edwin-blue);
+    color: var(--edwin-blue);
+    /* Promote above the modal backdrop (z-100) while urging so the throb
+       is actually visible and the button stays clickable for the user. */
+    z-index: 105;
+  }
+
+  .fullscreen-btn.urging:hover {
+    animation-play-state: paused;
+  }
+
+  /* Suggestion toast — appears bottom-center when a modal opens and the
+     content overflows. The toast itself is a clickable action (enters
+     fullscreen on click); the × dismisses it for the rest of the session.
+     z-index 95 sits between the modal backdrop (100) and the floating
+     buttons (90), but on a layer above any backdrop blur so it stays
+     legible while the modal is open. Actually — the modal backdrop covers
+     the whole screen at z-100, so the toast needs to be above that to be
+     visible at all. Using z-index 110. */
+  .fullscreen-prompt {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 110;
+    display: flex;
+    align-items: stretch;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md), 0 6px 18px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    animation: fullscreenPromptIn 0.28s ease-out;
+  }
+
+  .fullscreen-prompt[hidden] {
+    display: none;
+  }
+
+  @keyframes fullscreenPromptIn {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .fullscreen-prompt-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 0;
+    padding: 9px 14px 9px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .fullscreen-prompt-action svg {
+    color: var(--edwin-blue);
+    flex-shrink: 0;
+  }
+
+  .fullscreen-prompt-action:hover {
+    background: var(--edwin-blue-light);
+    color: var(--edwin-blue-dark);
+  }
+
+  .fullscreen-prompt-dismiss {
+    background: transparent;
+    border: 0;
+    border-left: 1px solid var(--rule);
+    padding: 0 12px;
+    color: var(--ink-muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .fullscreen-prompt-dismiss:hover {
+    background: var(--surface-soft);
+    color: var(--ink);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    transition: all 0.15s ease;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+    transform: rotate(90deg);
+  }
+
+  /* Atom viewer — sits in the body zone below the description strip.
+     Canvas height was 230 in the side-by-side layout; reduced to 180
+     here to claw back vertical space, since the atom in a wider canvas
+     has more horizontal room to breathe and doesn't need as much height. */
+  .atom-viewer {
+    margin: 0;
+    padding: 12px 14px;
+    background: #1a1f2e;
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .atom-canvas {
+    width: 100%;
+    height: 180px;
+    display: block;
+    cursor: grab;
+    border-radius: var(--radius-sm);
+  }
+
+  .atom-canvas:active { cursor: grabbing; }
+
+  .atom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .atom-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .model-toggle {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 3px;
+  }
+
+  .model-toggle button {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .model-toggle button:hover {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .model-toggle button.active {
+    background: var(--cat-color, var(--edwin-blue));
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .atom-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .atom-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .atom-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .atom-note {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-style: italic;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    padding-top: 28px;
+    margin-top: 16px;
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    body { padding: 20px 12px 60px; }
+    .table, .lanthanide-row, .actinide-row { gap: 3px; }
+    .element { padding: 3px; border-left-width: 3px; }
+    .name, .mass { display: none; }
+    /* Modal — collapse the hero zone to single column on mobile. The body
+       zone is already vertical at all sizes, so it just inherits that. */
+    .modal-header {
+      grid-template-columns: 1fr;
+      gap: 18px;
+      padding: 24px;
+    }
+    .modal-body {
+      gap: 14px;
+      padding: 22px 24px 24px;
+    }
+    .modal-identity { padding-right: 48px; }
+    .modal-symbol { font-size: 64px; }
+    .modal-name { font-size: 24px; }
+    /* On mobile, the prop grid stays 2-up because the cells are compact and
+       the modal is narrower. Keeping the doublewide bottom row intact. */
+    .properties { column-gap: 16px; }
+    h1 { font-size: 32px; }
+    .subtitle { font-size: 16px; }
+    /* Mobile: gap-control hidden (too small for upper gap on narrow screens).
+       Filtering via chips still updates state but the histogram UI is hidden.
+       A proper mobile filter UX would need a bottom-sheet pattern. */
+    .gap-control { display: none; }
+    .filter-rail { gap: 4px; }
+    .filter-chip { font-size: 12px; padding: 6px 10px; }
+    /* Search bar can't fit in the upper gap on mobile, so break it out of
+       the absolute-positioned slot and span it across the full grid width
+       as the first grid item. The 118 element cells follow normally. */
+    .search {
+      position: static;
+      grid-column: 1 / -1;
+      width: 100%;
+      margin-bottom: 8px;
+      font-size: 13px;
+      padding: 8px 14px;
+    }
+  }
+
+  /* =============================================================================
+     PERIODIC GAMES — DIFFICULTY SYSTEM
+     =============================================================================
+     A body-class system that controls how much of the periodic table is
+     accessible to the player during a game. Three modes:
+
+       .game-difficulty-easy   — no change, full table access
+       .game-difficulty-medium — table is blurred; player gets a budget of
+                                 "reveals" (3x3 windows) by clicking tiles
+       .game-difficulty-hard   — table is fully hidden
+
+     The body class is set when a game starts and removed when it ends.
+     Per-game medium-mode rules can layer further restrictions on top.
+
+     IMPORTANT: this system uses visibility/opacity-style hiding (not
+     display:none) so the table's grid layout doesn't collapse and reflow
+     when modes change. In hard mode the table area is replaced with a
+     placeholder strip of the same height to keep the page layout stable.
+     ----------------------------------------------------------------------------- */
+
+  /* MEDIUM MODE: blur every element tile.
+     Filter blur is GPU-accelerated and applies cleanly to the whole tile
+     subtree (number, symbol, name, mass, category color stripe). Pointer
+     events stay enabled because clicks need to trigger the reveal mechanic
+     (handled in JS via the element-click router).
+     The is-revealed class on a tile escapes the blur — that tile reads
+     normally with full details. */
+  body.game-difficulty-medium .element {
+    filter: blur(6px);
+    transition: filter 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+  }
+  body.game-difficulty-medium .element.is-revealed {
+    filter: none;
+  }
+
+  /* The 3x3 hover preview: tiles inside the prospective reveal window
+     glow softly so the player can aim their click. JS sets .reveal-preview
+     on the 9 cells (or fewer at edges) under the cursor in real time as
+     the mouse moves. The glow is a layered box-shadow (outer accent +
+     inner ring) plus a slight de-blur so the player can almost-but-not-
+     quite read the tile, which makes the click feel earned. */
+  body.game-difficulty-medium .element.reveal-preview {
+    filter: blur(3px);
+    box-shadow:
+      0 0 0 2px var(--edwin-blue),
+      0 0 18px 2px rgba(74, 144, 226, 0.45);
+    z-index: 6;
+    transform: translateY(-1px);
+  }
+  /* Already-revealed tile under the preview: no need to deblur further
+     (it's already clear), but show the preview ring so the player sees
+     it would still be part of the click target. */
+  body.game-difficulty-medium .element.reveal-preview.is-revealed {
+    filter: none;
+    box-shadow:
+      0 0 0 2px var(--edwin-blue),
+      0 0 18px 2px rgba(74, 144, 226, 0.45);
+  }
+
+  /* When all reveals are spent, dim the preview ring so players can tell
+     they've used their budget. Click still works (no-op handled in JS),
+     but the affordance dims to communicate "no more reveals available". */
+  body.game-difficulty-medium.reveals-exhausted .element.reveal-preview {
+    box-shadow: 0 0 0 2px var(--ink-muted);
+    filter: blur(6px);
+  }
+
+  /* Brief shake feedback when the player clicks despite reveals being
+     exhausted, so the click doesn't feel like a dead input. JS adds the
+     class for ~280ms and removes it. The shake is small and quick — just
+     enough to register "nope, no more". */
+  @keyframes revealNopeShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+  .element.reveal-nope {
+    animation: revealNopeShake 0.28s ease;
+  }
+
+  /* HARD MODE: hide the entire table. The player must answer with no
+     reference to the table at all. We use visibility (not display:none)
+     so the page doesn't reflow — the table's space stays reserved, the
+     content just becomes invisible and unclickable.
+     The chip rail and gap-control panel also hide here since they have
+     no purpose without a visible table. */
+  body.game-difficulty-hard #table .element,
+  body.game-difficulty-hard #table .placeholder,
+  body.game-difficulty-hard #table .search,
+  body.game-difficulty-hard .lanthanide-row,
+  body.game-difficulty-hard .actinide-row,
+  body.game-difficulty-hard .gap-control,
+  body.game-difficulty-hard .filter-rail,
+  body.game-difficulty-hard #legendBelow {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* Hard-mode placeholder: a soft strip where the table used to be, with
+     a hint that the table is hidden. Sits on top of the invisible table
+     using absolute positioning inside .frame. Visible only in hard mode. */
+  .hard-mode-veil {
+    position: absolute;
+    left: 0;
+    right: 0;
+    /* Top/bottom set by JS to match the table's bounding rect, since the
+       table's height varies with viewport width (aspect-ratio cells). */
+    top: 0;
+    height: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background: repeating-linear-gradient(
+      45deg,
+      var(--surface-soft) 0,
+      var(--surface-soft) 12px,
+      var(--surface) 12px,
+      var(--surface) 24px
+    );
+    border: 1.5px dashed var(--rule-strong);
+    color: var(--ink-soft);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    z-index: 4;
+  }
+  body.game-difficulty-hard .hard-mode-veil {
+    display: flex;
+  }
+  .hard-mode-veil-text {
+    text-align: center;
+    max-width: 320px;
+    padding: 0 24px;
+  }
+  .hard-mode-veil-text strong {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  /* =============================================================================
+     PERIODIC GAMES — GAME BAR (Phase A2)
+     =============================================================================
+     The persistent strip shown while a game is active. Lives between the
+     masthead and the chip rail when at top of page; floats fixed to the
+     viewport top when scrolled past. Draggable horizontally via the two
+     square grabbers on each end (only when floating).
+
+     Layout (left to right):
+       [≡ grabber] [game-name pill] [center: input/prompt] [right: dots/score/timer] [×] [≡ grabber]
+
+     The bar's brand color comes from --gb-color, set per-game when the
+     bar opens. All accents inside the bar reference this token, so the
+     whole strip recolors with one CSS var update.
+
+     Visibility: --gb-visible attribute on body controls whether the bar
+     is shown. We use visibility/opacity (not display:none) so the page
+     layout stays stable in document-flow mode.
+     ----------------------------------------------------------------------------- */
+
+  /* Reserve the bar's slot in the document flow when a game is active.
+     This is the spacer wrapper that holds the bar's place at the top of
+     the page; the actual bar element lives inside and switches between
+     position:static and position:fixed based on scroll. */
+  .game-bar-slot {
+    /* When no game active, this collapses entirely and takes no space. */
+    height: 0;
+    margin: 0;
+    transition: height 0.2s ease, margin 0.2s ease;
+  }
+  body.game-active .game-bar-slot {
+    height: 56px;
+    margin: 4px auto 12px;
+  }
+
+  /* Game stage — sits below the bar, holds game-specific persistent UI
+     (Elementle's guess history rows, etc). Hidden by default; each game
+     reveals + populates it when it starts. */
+  .game-stage {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0;
+  }
+  .game-stage:empty {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* The bar itself. Width is ~33% of the frame, with sane min/max so it
+     stays usable on small/large viewports. Centered horizontally within
+     the slot. Rounded with a subtle border + shadow that lifts on float. */
+  .game-bar {
+    /* Default state — invisible, takes no space. */
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    position: relative;
+    /* Float defaults — overridden when not floating */
+    width: clamp(420px, 38vw, 640px);
+    height: 48px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--gb-color, var(--edwin-blue));
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease, height 0.18s ease;
+    z-index: 95;
+    /* Default brand color — overridden inline by openGameBar() */
+    --gb-color: var(--edwin-blue);
+  }
+  body.game-active .game-bar {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Floating state: pin to viewport top, gain a stronger shadow.
+     The bar always uses an explicit `left` value (in pixels) when
+     floating — never the `left: 50%; transform: translateX(-50%)`
+     centering hack — because pure pixel positioning lets the `left`
+     property transition smoothly between centered and dragged X
+     positions. JS computes the centered X (viewport_width - bar_width
+     halved) and writes it on float-in; drags update it directly. */
+  .game-bar.is-floating {
+    position: fixed;
+    top: 12px;
+    margin: 0;
+    transform: none;
+    box-shadow: var(--shadow-lg);
+    /* Smooth slide between centered and dragged positions. The opacity/
+       box-shadow inherits from the base .game-bar transition. */
+    transition: opacity 0.2s ease, box-shadow 0.2s ease, height 0.18s ease, left 0.28s ease;
+  }
+  /* During an active drag, kill the left transition so the bar tracks
+     the cursor 1:1 with no lag. JS adds .is-dragging during mousedown
+     → mouseup. */
+  .game-bar.is-floating.is-dragging {
+    transition: opacity 0.2s ease, box-shadow 0.2s ease, height 0.18s ease;
+  }
+
+  /* Square grabber (drag handle) — same on both sides. Square area
+     matches bar height so it reads as a corner grip. Dotted icon
+     visually communicates "drag me" without needing a tooltip. The
+     cursor changes to grab/grabbing for the affordance. Only active
+     when the bar is floating. */
+  .gb-grabber {
+    flex: 0 0 auto;
+    width: 40px;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-muted);
+    background: var(--surface-soft);
+    cursor: default;
+    user-select: none;
+    transition: background 0.12s ease, color 0.12s ease;
+    /* Hidden visually when not floating — the bar is centered in the
+       layout and dragging makes no sense, so the affordance disappears. */
+    opacity: 0.35;
+  }
+  .game-bar.is-floating .gb-grabber {
+    cursor: grab;
+    opacity: 1;
+  }
+  .game-bar.is-floating .gb-grabber:hover {
+    background: var(--surface-2);
+    color: var(--ink-soft);
+  }
+  .game-bar.is-floating .gb-grabber.is-dragging {
+    cursor: grabbing;
+    background: var(--surface-2);
+  }
+  /* The dotted grip icon — a tiny 2x3 dot pattern. Drawn with an SVG
+     for crispness. Color follows currentColor so it tracks hover. */
+  .gb-grabber svg {
+    pointer-events: none;
+  }
+
+  /* Game name pill on the left. Reads the brand color from --gb-color
+     so each game's bar carries its color into the pill background. */
+  .gb-name {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: 10px;
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--gb-color);
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .gb-name-difficulty {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    opacity: 0.85;
+    padding-left: 6px;
+    border-left: 1px solid rgba(255, 255, 255, 0.4);
+    margin-left: 2px;
+  }
+
+  /* Center slot — flexes to fill remaining space. Each game injects
+     its own content here (input field, prompt, etc). */
+  .gb-center {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    transition: width 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+    overflow: hidden;
+  }
+
+  /* Right slot — score, dots, timer. Fixed-ish width so it doesn't
+     squeeze the center slot. Each game populates this via JS. */
+  .gb-right {
+    flex: 0 0 auto;
+    align-self: center;
+    margin-right: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  /* Exit button — turns into an inline confirm prompt on first click.
+     The confirm prompt has its own visible "End game?" + ✓/× buttons
+     that overlay the original × until the user either confirms or
+     cancels. This guards against accidental clicks when the player
+     was reaching for the adjacent grabber. */
+  .gb-exit-wrap {
+    flex: 0 0 auto;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  .gb-exit {
+    width: 32px;
+    height: 32px;
+    margin: 0 4px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--ink-muted);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .gb-exit:hover {
+    background: var(--surface-2);
+    color: var(--edwin-red);
+  }
+  .gb-exit.is-confirming {
+    /* Hidden by visibility, not display, so the confirm overlay can
+       sit at the same position. */
+    visibility: hidden;
+  }
+
+  /* Inline confirm overlay. Replaces the × area with a compact
+     "End game? ✓ ×" prompt. */
+  .gb-exit-confirm {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    display: none;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    padding: 4px 6px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .gb-exit.is-confirming + .gb-exit-confirm {
+    display: inline-flex;
+  }
+  .gb-exit-confirm-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-right: 2px;
+  }
+  .gb-exit-confirm-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .gb-exit-confirm-yes {
+    background: var(--edwin-red);
+    color: white;
+  }
+  .gb-exit-confirm-yes:hover {
+    background: #b8351f;
+  }
+  .gb-exit-confirm-no {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+  .gb-exit-confirm-no:hover {
+    background: var(--rule);
+  }
+
+  /* While a game is active, gate off the table's filter affordances and
+     the search input so they can't be used as cheat aids. The chip rail
+     becomes non-interactive (and visually muted), and the search input
+     is hidden. The chip rail stays in the layout so the page doesn't
+     reflow when a game starts/ends; it just becomes inert. */
+  body.game-active .filter-rail {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  body.game-active .search {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  /* In hard mode the chip rail is already hidden by the difficulty
+     system — no extra rule needed. In medium mode it stays visible
+     but inert (per the rules above), which is fine: it gives the
+     player a sense of orientation without becoming a tool. */
+
+  /* Wobble feedback — fired on the games button or compact-view button
+     when the floating game bar's drag clamp bumps into it. Small quick
+     side-to-side jiggle that registers "you've hit the edge" without
+     being noisy. JS adds .gb-bump for ~280ms and removes it; the
+     animation re-triggers on each transition into the clamped state
+     (not on every mousemove while clamped). */
+  @keyframes gbBumpWobble {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    20% { transform: translateX(-2px) rotate(-3deg); }
+    50% { transform: translateX(2px) rotate(3deg); }
+    80% { transform: translateX(-1px) rotate(-1deg); }
+  }
+  .gb-bump {
+    animation: gbBumpWobble 0.32s ease-out;
+  }
+  /* The corner-toggle has its own scale on hover; preserve that by
+     scoping the bump to a separate transform-origin if needed.
+     Currently the corner-toggle's idle transform is none (only hover
+     applies scale 1.05), so the wobble's transform sits cleanly on
+     top of the idle state. */
+
+  /* =============================================================================
+     ELEMENTLE — Phase B
+     =============================================================================
+     CSS for the Elementle game UI: input + autocomplete in the bar's center
+     slot, attempt dots in the right slot, guess history rows in the stage,
+     and the end-of-game celebration panel.
+
+     Color palette mirrors Wordle's:
+       --ele-green:  #6AAA64  (exact match)
+       --ele-yellow: #C9B458  (close)
+       --ele-grey:   #787C7E  (miss)
+     ----------------------------------------------------------------------------- */
+  :root {
+    --ele-green:  #6AAA64;
+    --ele-yellow: #C9B458;
+    --ele-grey:   #787C7E;
+  }
+  body.dark {
+    --ele-green:  #538D4E;
+    --ele-yellow: #B59F3B;
+    --ele-grey:   #585A5C;
+  }
+
+  /* ----- INPUT IN BAR CENTER SLOT ----- */
+  .ele-input-wrap {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+  }
+  .ele-input {
+    width: 100%;
+    padding: 6px 12px;
+    background: var(--surface-soft);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.12s ease, background 0.12s ease;
+  }
+  .ele-input:focus {
+    border-color: var(--gb-color, var(--edwin-blue));
+    background: var(--surface);
+  }
+  .ele-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .ele-input::placeholder {
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+
+  /* ----- DROPDOWN -----
+     Positioned `fixed` (not absolute relative to the input) so it
+     escapes the bar's overflow:hidden clipping. JS sets top/left/width
+     on each render to match the input's current bounding rect. */
+  .ele-dropdown {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md), 0 8px 24px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    z-index: 200;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .ele-dropdown[hidden] {
+    display: none;
+  }
+  .ele-dropdown-item {
+    display: grid;
+    grid-template-columns: 32px 36px 1fr;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 10px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    transition: background 0.08s ease;
+  }
+  .ele-dropdown-item:last-child { border-bottom: 0; }
+  .ele-dropdown-item:hover,
+  .ele-dropdown-item.is-active {
+    background: var(--surface-soft);
+  }
+  .ele-dropdown-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-align: right;
+  }
+  .ele-dropdown-symbol {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .ele-dropdown-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  /* ----- GUESSES-REMAINING COUNTER (BAR RIGHT SLOT) -----
+     Replaces the old 10-dot row. Single number with a clock icon —
+     compact (~36px wide) so the input gets more horizontal real estate.
+     Tints orange in the final 3 guesses, green on win, red on loss. */
+  .ele-guesses {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px 3px 7px;
+    background: var(--surface-soft);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-size: 12px;
+    font-weight: 800;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .ele-guesses.is-low {
+    background: rgba(245, 158, 11, 0.15);
+    color: #B45309;
+  }
+  body.dark .ele-guesses.is-low {
+    background: rgba(245, 158, 11, 0.2);
+    color: #FCD34D;
+  }
+  .ele-guesses.is-win {
+    background: var(--ele-green);
+    color: white;
+  }
+  .ele-guesses.is-loss {
+    background: var(--ele-grey);
+    color: white;
+  }
+
+  /* ----- REVEAL COUNTER (medium mode only, sits next to dots) ----- */
+  .ele-reveals {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    background: var(--surface-soft);
+    border-radius: 999px;
+    color: var(--ink-soft);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* ----- STAGE (BELOW BAR) ----- */
+  .ele-stage {
+    max-width: 760px;
+    margin: 0 auto 10px;
+    padding: 0 16px;
+  }
+
+  /* ----- HISTORY GRID ----- */
+  .ele-history {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Each guessed-row: name on the left, 5 property tiles on the right.
+     The whole row reads as one horizontal unit; tiles flip in to reveal
+     the comparison. */
+  .ele-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 8px;
+    align-items: stretch;
+    animation: eleRowIn 0.3s ease;
+  }
+  @keyframes eleRowIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .ele-row-name {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 10px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+  }
+  .ele-row-symbol {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .ele-row-fullname {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    line-height: 1.2;
+    margin-top: 1px;
+  }
+
+  .ele-row-tiles {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .ele-tile {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: inherit;
+    text-align: center;
+    min-height: 46px;
+    /* Tile flip animation — triggers as the row appears. */
+    animation: eleTileFlip 0.5s ease backwards;
+  }
+  /* Stagger the flips left-to-right so it feels Wordle-y. */
+  .ele-row-tiles .ele-tile:nth-child(1) { animation-delay: 0.05s; }
+  .ele-row-tiles .ele-tile:nth-child(2) { animation-delay: 0.15s; }
+  .ele-row-tiles .ele-tile:nth-child(3) { animation-delay: 0.25s; }
+  .ele-row-tiles .ele-tile:nth-child(4) { animation-delay: 0.35s; }
+  .ele-row-tiles .ele-tile:nth-child(5) { animation-delay: 0.45s; }
+  @keyframes eleTileFlip {
+    0%   { transform: rotateX(0); background: var(--surface-2); color: var(--ink); }
+    49%  { transform: rotateX(90deg); background: var(--surface-2); color: var(--ink); }
+    50%  { transform: rotateX(90deg); /* color flip happens here */ }
+    100% { transform: rotateX(0); }
+  }
+
+  .ele-tile.is-exact { background: var(--ele-green); }
+  .ele-tile.is-close { background: var(--ele-yellow); }
+  .ele-tile.is-miss  { background: var(--ele-grey); }
+
+  .ele-tile-label {
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+  .ele-tile-value {
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .ele-arrow {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* ----- END PANEL (win/lose) -----
+     Wraps the existing modal's identity + properties + description in
+     an inline panel, with a result banner up top and action buttons
+     at the bottom. Reuses .modal-identity / .properties / .prop /
+     .description so the win state reads as a continuation of the
+     element-profile vocabulary the user already knows from clicking
+     table cells, minus the 3D atom viewer. */
+  .ele-end-panel {
+    margin-top: 14px;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    animation: eleEndIn 0.4s ease;
+  }
+  .ele-end-panel[hidden] { display: none; }
+  @keyframes eleEndIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Result banner — colored strip at the top with the headline,
+     subtitle, and score on a win. Green on win, grey on loss. */
+  .ele-end-result {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    color: white;
+  }
+  .ele-end-result[data-state="win"]  { background: var(--ele-green); }
+  .ele-end-result[data-state="loss"] { background: var(--ele-grey); }
+  .ele-end-result-headline {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .ele-end-result-detail {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.92;
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .ele-end-result-score {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.18);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+  }
+  .ele-end-result-score-value {
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .ele-end-result-score-label {
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Profile section — wraps the modal-style header + description.
+     Uses --cat-color so the modal's category-aware accents (left
+     border, etc.) work the same way they do in the popup modal. */
+  .ele-end-profile {
+    padding: 16px 18px;
+    border-left: 4px solid var(--cat-color, var(--ink-muted));
+  }
+  .ele-end-header {
+    display: grid;
+    /* Mirror the modal's roughly-1:2 ratio between identity column and
+       properties grid. The identity needs ~140px to fit the symbol. */
+    grid-template-columns: 160px 1fr;
+    gap: 18px;
+    align-items: stretch;
+  }
+  /* The .modal-identity / .properties / .prop / etc. classes are
+     reused from the existing modal CSS — see the modal section above
+     in this stylesheet. We don't redefine them here. */
+
+  .ele-end-description {
+    /* Reuses .description styles from the modal CSS (same class). The
+       extra rule here just adds top margin since the description sits
+       below the header grid in our inline panel. */
+    margin-top: 14px;
+  }
+
+  /* Action row — Play again + Exit. Sits below the profile in its own
+     padded strip with a top divider for visual separation. */
+  .ele-end-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 18px 16px;
+    border-top: 1px solid var(--rule);
+  }
+  .ele-end-btn {
+    padding: 9px 18px;
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 0;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.12s ease, transform 0.12s ease, filter 0.12s ease;
+  }
+  .ele-end-btn:hover { background: var(--rule); transform: translateY(-1px); }
+  .ele-end-btn-primary {
+    background: var(--ele-green);
+    color: white;
+  }
+  .ele-end-btn-primary:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  /* Mobile — stack identity + properties vertically. Result banner's
+     score moves below the headline rather than alongside. */
+  @media (max-width: 600px) {
+    .ele-end-header {
+      grid-template-columns: 1fr;
+    }
+    .ele-end-result {
+      grid-template-columns: 1fr;
+    }
+    .ele-end-result-score {
+      grid-column: 1;
+      grid-row: 3;
+      justify-self: flex-start;
+    }
+  }
+
+  /* Mobile — stack name + tiles vertically when narrow */
+  @media (max-width: 600px) {
+    .ele-row {
+      grid-template-columns: 80px 1fr;
+    }
+    .ele-tile-label { font-size: 7.5px; }
+    .ele-tile-value { font-size: 11px; }
+  }
