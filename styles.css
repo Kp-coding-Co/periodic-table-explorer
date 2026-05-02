@@ -1492,24 +1492,20 @@
      (only one corner-cluster flyout open at a time).
      ----------------------------------------------------------------------------- */
 
-  /* The launcher panel — anchored top-left to the games button column.
-     Same top: 68px (button at 20 + 40 height + 8 gap) as the hamburger
-     menu. Wider than the menu (480px vs 260px) since it holds the 2x3
-     tile grid with taglines.
+  /* The launcher panel — anchored to the left edge of the games button so
+     it visually grows out of that button. Same top: 68px (button at 20 +
+     40 height + 8 gap) as the hamburger menu. Wider than the menu
+     (480px vs 260px) since it holds the 2x3 tile grid with taglines.
 
-     Top-LEFT-corner-anchored on purpose so it visually grows out of the
-     games button position. The button itself is at left: 68px (immediately
-     right of the hamburger). The panel hangs from left: 20px (aligned
-     with the hamburger column) which lets the games button sit just
-     above the panel's upper edge, reinforcing the "this opened from
-     that button" relationship.
+     left: 68px matches the games button's left edge, reinforcing the
+     "this opened from that button" relationship.
 
      Z-index 91 matches the hamburger menu — only one of these is ever
      open at a time so they don't z-stack against each other. */
   .launcher {
     position: fixed;
     top: 68px;
-    left: 20px;
+    left: 68px;
     width: 480px;
     background: var(--surface);
     border: 1px solid var(--rule);
