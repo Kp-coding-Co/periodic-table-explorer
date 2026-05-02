@@ -2518,14 +2518,19 @@
      placeholder strip of the same height to keep the page layout stable.
      ----------------------------------------------------------------------------- */
 
-  /* MEDIUM MODE: blur every element tile.
+  /* MEDIUM MODE: blur every element tile AND the series markers (La-Lu,
+     Ac-Lr, the period-6/7 row labels). The markers aren't .element nodes,
+     they're labels inside the table, so they need their own selector here
+     or they'd stay sharp while everything around them blurs.
      Filter blur is GPU-accelerated and applies cleanly to the whole tile
      subtree (number, symbol, name, mass, category color stripe). Pointer
      events stay enabled because clicks need to trigger the reveal mechanic
      (handled in JS via the element-click router).
      The is-revealed class on a tile escapes the blur — that tile reads
-     normally with full details. */
-  body.game-difficulty-medium .element {
+     normally with full details. Markers don't have an is-revealed escape
+     since they aren't gameplay tiles; they stay blurred for the whole game. */
+  body.game-difficulty-medium .element,
+  body.game-difficulty-medium .series-marker {
     filter: blur(6px);
     transition: filter 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
   }
