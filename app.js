@@ -220,6 +220,17 @@ const toggleState = {
   origins: new Set()       // active stardust origin chips
 };
 
+// Temperature filter state — semantically distinct from the show/hide filters
+// above. When active, every element tile is recolored by the state it would
+// be in (solid / liquid / gas) at tempK — category colors are overridden via
+// the body.temperature-mode + .state-* class pairing in styles.css. Doesn't
+// hide any elements, so it doesn't participate in matchCount or the empty
+// state banner.
+const tempState = {
+  active: false,           // when true, body.temperature-mode is set and tiles are recolored
+  tempK: 293               // current temperature in Kelvin (293K ≈ room temp, the default)
+};
+
 // Tracks whether the user has dismissed the empty-state overlay for the
 // current run of zero matches. Auto-clears in applyFilters() the moment the
 // match count returns to non-zero, so the overlay re-earns visibility on
@@ -306,6 +317,51 @@ function sliderRangeFor(key) {
   const valLo = FILTER_CONFIG[key].getThreshold(lo);
   const valHi = FILTER_CONFIG[key].getThreshold(hi);
   return { min: Math.min(valLo, valHi), max: Math.max(valLo, valHi) };
+}
+
+// =====================================================
+// TEMPERATURE FILTER HELPERS
+// =====================================================
+// Hybrid slider scale: 0K..6000K. Linear in the lower 70% of the slider
+// (covering 0..2000K, where 95% of state-change drama happens — water boils
+// at 373K, iron melts at 1811K, etc.), then accelerated in the upper 30%
+// to reach the highest boiling points in the data (~5870K for Re/W).
+// Without the hybrid stretch, all the interesting state changes get squeezed
+// into the leftmost ~33% of a linear slider.
+const TEMP_MIN_K     = 0;
+const TEMP_MAX_K     = 6000;
+const TEMP_BREAK_POS = 70;     // slider position where the linear/accelerated segments meet
+const TEMP_BREAK_K   = 2000;   // temperature at the breakpoint
+
+function posToTempK(pos) {
+  if (pos <= TEMP_BREAK_POS) return (pos / TEMP_BREAK_POS) * TEMP_BREAK_K;
+  return TEMP_BREAK_K + ((pos - TEMP_BREAK_POS) / (100 - TEMP_BREAK_POS)) * (TEMP_MAX_K - TEMP_BREAK_K);
+}
+
+function tempKToPos(tempK) {
+  if (tempK <= TEMP_BREAK_K) return (tempK / TEMP_BREAK_K) * TEMP_BREAK_POS;
+  return TEMP_BREAK_POS + ((tempK - TEMP_BREAK_K) / (TEMP_MAX_K - TEMP_BREAK_K)) * (100 - TEMP_BREAK_POS);
+}
+
+// Compute the phase an element would be in at the given temperature in Kelvin.
+// Returns 'solid' | 'liquid' | 'gas'. Falls back to 'solid' for elements
+// with unknown melting/boiling points (a few late transuranics) — those are
+// solid at any reasonable temperature anyway.
+function stateAt(tempK, elementRow) {
+  const melting = elementRow[9];
+  const boiling = elementRow[10];
+  if (melting == null || boiling == null) return 'solid';
+  if (tempK < melting) return 'solid';
+  if (tempK >= boiling) return 'gas';
+  return 'liquid';
+}
+
+// Format a temperature reading for the chip + panel readouts.
+// Always shows K and °C (kelvin matches the underlying data, celsius is
+// what humans actually feel temperature in).
+function formatTempReadout(tempK) {
+  const c = Math.round(tempK - 273.15);
+  return `${Math.round(tempK)} K (${c >= 0 ? '+' : ''}${c}°C)`;
 }
 
 function formatYearReadout(year) {
@@ -426,6 +482,20 @@ function updateChipLabels() {
     stateChip.classList.remove('has-filter');
   }
 
+  // Temperature chip — shows the current temperature when the filter is
+  // active, falls back to the default label when it's off.
+  const tempChip = document.querySelector('[data-filter="temperature"]');
+  const tempText = document.getElementById('chip-text-temperature');
+  if (tempChip && tempText) {
+    if (tempState.active) {
+      tempText.textContent = formatTempReadout(tempState.tempK);
+      tempChip.classList.add('has-filter');
+    } else {
+      tempText.textContent = 'Temperature';
+      tempChip.classList.remove('has-filter');
+    }
+  }
+
   // Stardust chip — summarises selected origin processes
   const stardustChip = document.querySelector('[data-filter="stardust"]');
   const stardustText = document.getElementById('chip-text-stardust');
@@ -482,6 +552,17 @@ function openFilterPanel(key) {
     renderStateControls();
   } else if (key === 'stardust') {
     renderStardustControls();
+  } else if (key === 'temperature') {
+    // Opening the panel auto-activates the filter so the user immediately
+    // sees the visual effect — there's no other reason to open this panel.
+    // The toggle inside the panel lets them turn coloring off without
+    // closing the panel (e.g., to compare colored vs uncolored views).
+    if (!tempState.active) {
+      tempState.active = true;
+      applyTemperatureColoring();
+      updateChipLabels();
+    }
+    renderTemperatureControls();
   } else {
     renderHistogram(key);
   }
@@ -937,6 +1018,94 @@ function renderStardustControls() {
   });
 }
 
+// Render the temperature filter's gap-control panel: a horizontal slider
+// (single handle) with hot/cold gradient track, a big readout showing the
+// current temp in K + °C, an enable/disable toggle, and a color-legend
+// strip showing what solid/liquid/gas tiles look like at this temperature.
+//
+// Unlike the histogram filters, this is a single-handle slider on a hybrid
+// scale (linear 0..2000K, accelerated 2000..6000K) — see posToTempK above.
+// We keep position internally as 0..100 so the existing pixel-math pattern
+// from attachHistoDrag works unchanged.
+function renderTemperatureControls() {
+  const gap = document.getElementById('gapControl');
+  const pos = tempKToPos(tempState.tempK);
+
+  gap.innerHTML = `
+    <div class="gap-control-header">
+      <span class="gap-control-icon">🌡</span>
+      <span class="gap-control-label">Temperature — State of Matter</span>
+      <button type="button" class="temp-toggle ${tempState.active ? 'active' : ''}" id="tempToggle">
+        ${tempState.active ? 'Coloring: ON' : 'Coloring: OFF'}
+      </button>
+    </div>
+    <div class="temp-readout" id="tempReadout">${formatTempReadout(tempState.tempK)}</div>
+    <div class="temp-slider" id="tempSlider">
+      <div class="temp-slider-track"></div>
+      <div class="temp-slider-drag" id="tempSliderDrag"></div>
+      <div class="temp-slider-thumb" id="tempSliderThumb" style="left: ${pos}%"></div>
+    </div>
+    <div class="temp-legend">
+      <span class="temp-legend-item"><span class="temp-swatch state-solid-swatch"></span>Solid</span>
+      <span class="temp-legend-item"><span class="temp-swatch state-liquid-swatch"></span>Liquid</span>
+      <span class="temp-legend-item"><span class="temp-swatch state-gas-swatch"></span>Gas</span>
+    </div>
+    <div class="gap-control-explainer">Drag to set the temperature. Each tile is recolored by the state it would be in (solid / liquid / gas). Default is room temperature (293 K, 20°C). Range covers absolute zero through 6000 K — hot enough to boil tungsten.</div>
+  `;
+
+  attachTempSliderDrag();
+
+  document.getElementById('tempToggle').addEventListener('click', () => {
+    tempState.active = !tempState.active;
+    document.getElementById('tempToggle').textContent =
+      tempState.active ? 'Coloring: ON' : 'Coloring: OFF';
+    document.getElementById('tempToggle').classList.toggle('active', tempState.active);
+    applyTemperatureColoring();
+    updateChipLabels();
+  });
+}
+
+// Pointer-drag handler for the temperature slider thumb. Mirrors the
+// attachHistoDrag pattern but with a single handle.
+function attachTempSliderDrag() {
+  const slider = document.getElementById('tempSlider');
+  const drag = document.getElementById('tempSliderDrag');
+  const thumb = document.getElementById('tempSliderThumb');
+  const readout = document.getElementById('tempReadout');
+
+  function clientXToPos(clientX) {
+    const rect = slider.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+    return (x / rect.width) * 100;
+  }
+
+  function setPos(pos) {
+    const clamped = Math.max(0, Math.min(100, pos));
+    tempState.tempK = posToTempK(clamped);
+    thumb.style.left = `${clamped}%`;
+    readout.textContent = formatTempReadout(tempState.tempK);
+    applyTemperatureColoring();
+    updateChipLabels();
+  }
+
+  drag.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    drag.setPointerCapture(e.pointerId);
+    setPos(clientXToPos(e.clientX));
+
+    const move = (ev) => setPos(clientXToPos(ev.clientX));
+    const up = (ev) => {
+      drag.removeEventListener('pointermove', move);
+      drag.removeEventListener('pointerup', up);
+      drag.removeEventListener('pointercancel', up);
+      try { drag.releasePointerCapture(ev.pointerId); } catch {}
+    };
+    drag.addEventListener('pointermove', move);
+    drag.addEventListener('pointerup', up);
+    drag.addEventListener('pointercancel', up);
+  });
+}
+
 function isAnyFilterActive() {
   // A two-handle slider is active when its lo or hi has moved off either
   // extreme — i.e., the range is narrower than [0, 100].
@@ -953,7 +1122,8 @@ function isAnyFilterActive() {
     || toggleState.states.size > 0
     || toggleState.synthetic
     || toggleState.radioactive
-    || toggleState.origins.size > 0;
+    || toggleState.origins.size > 0
+    || tempState.active;
 }
 
 function applyFilters() {
@@ -1073,6 +1243,22 @@ function applyFilters() {
   if (resetBtn) resetBtn.disabled = !isAnyFilterActive();
 }
 
+// Apply temperature-mode coloring. Separate from applyFilters() because this
+// COLORS elements rather than HIDING them — it doesn't affect matchCount, the
+// empty-state banner, or the .faded class. Toggles body.temperature-mode (so
+// CSS knows to override category colors) and stamps a state-{solid,liquid,gas}
+// class on every element cell based on the current tempState.tempK.
+function applyTemperatureColoring() {
+  document.body.classList.toggle('temperature-mode', tempState.active);
+  document.querySelectorAll('.element[data-number]').forEach(el => {
+    const num = parseInt(el.dataset.number);
+    const data = ELEMENTS.find(e => e[0] === num);
+    el.classList.remove('state-solid', 'state-liquid', 'state-gas');
+    if (!tempState.active || !data) return;
+    el.classList.add(`state-${stateAt(tempState.tempK, data)}`);
+  });
+}
+
 function resetAllFilters() {
   // Reset sliders to full range (lo=0, hi=100 = no filter)
   sliderState.year      = { lo: 0, hi: 100 };
@@ -1086,6 +1272,12 @@ function resetAllFilters() {
   toggleState.radioactive = false;
   toggleState.origins.clear();
 
+  // Reset temperature filter (keep tempK at the default so re-activating
+  // starts at room temp, not wherever the user last left it)
+  tempState.active = false;
+  tempState.tempK = 293;
+  applyTemperatureColoring();
+
   // Reset category & search
   activeFilter = null;
   document.getElementById('search').value = '';
@@ -1098,6 +1290,8 @@ function resetAllFilters() {
     renderStateControls();
   } else if (histoState.activeFilter === 'stardust') {
     renderStardustControls();
+  } else if (histoState.activeFilter === 'temperature') {
+    renderTemperatureControls();
   } else if (histoState.activeFilter) {
     // For a histogram filter, repainting bars and re-positioning both
     // thumbs is enough — markers stay valid since the chart axis didn't

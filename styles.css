@@ -706,6 +706,209 @@
     line-height: 1.4;
   }
 
+  /* =============================================================================
+     TEMPERATURE FILTER — gap-control panel + state-color overlay on tiles
+     =============================================================================
+     The temperature filter is unique in this app: it COLORS every element by
+     the state it would be in at the chosen temperature, instead of hiding
+     non-matching elements like the other filters do. Two CSS pieces:
+       1) Panel UI (header toggle, slider with hot/cold gradient, color legend)
+       2) Tile recolor — body.temperature-mode .element.state-{solid,liquid,gas}
+          overrides the per-category background. The category color stays on
+          the small left border as a subtle reminder.
+     ----------------------------------------------------------------------------- */
+
+  /* State color tokens — single source of truth, used both on tiles and in
+     the panel's legend swatches. Cool slate for solid (frozen, stable),
+     teal for liquid (transitional, fluid), warm amber for gas (hot, energetic). */
+  :root {
+    --state-solid:  #5b7a9c;
+    --state-liquid: #3a9b94;
+    --state-gas:    #e89945;
+  }
+
+  /* Panel-level: temperature panel uses the default light theme — no special
+     background like stardust gets, since the slider's gradient track IS the
+     visual identity here. */
+  .gap-control[data-active-filter="temperature"] {
+    /* Inherit the default surface — slider does the visual work */
+  }
+
+  /* Toggle button in the header (right side) — flips coloring on/off without
+     closing the panel, so you can compare colored vs uncolored views. */
+  .temp-toggle {
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 999px;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: all 0.12s ease;
+  }
+  .temp-toggle:hover {
+    border-color: var(--edwin-blue);
+    color: var(--edwin-blue);
+  }
+  .temp-toggle.active {
+    background: var(--edwin-blue);
+    border-color: var(--edwin-blue);
+    color: white;
+  }
+
+  /* Big numeric readout — current temperature in K + °C. Sits between
+     the header and the slider so the user always sees what value the
+     thumb is at. */
+  .temp-readout {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align: center;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    padding: 1px 0;
+  }
+
+  /* Slider container — fixed height, room for thumb + gradient track. */
+  .temp-slider {
+    position: relative;
+    height: 16px;
+    margin: 2px 8px;
+    flex-shrink: 0;
+  }
+
+  /* The visible track: a horizontal gradient from cold (deep blue) through
+     neutral to hot (red). Mirrors the Ptable hot/cold bar visually so the
+     metaphor reads instantly. The track is thin and centered vertically;
+     the thumb sits on top of it. */
+  .temp-slider-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 6px;
+    transform: translateY(-50%);
+    border-radius: 3px;
+    background: linear-gradient(
+      to right,
+      #1e3a8a 0%,      /* deep blue — absolute zero */
+      #3b82f6 15%,     /* blue */
+      #93c5fd 30%,     /* pale blue */
+      #f3f4f6 45%,     /* near room temp neutral */
+      #fde68a 60%,     /* warm yellow */
+      #fb923c 75%,     /* orange */
+      #dc2626 90%,     /* red */
+      #7f1d1d 100%     /* deep red — extreme heat */
+    );
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+  }
+
+  /* Invisible drag layer — wider hit zone than the visible thumb so users
+     can grab it easily. Overlays the entire slider area. */
+  .temp-slider-drag {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    cursor: grab;
+    touch-action: none;
+  }
+  .temp-slider-drag:active {
+    cursor: grabbing;
+  }
+
+  /* The visible thumb — a circle that sits on top of the track at the
+     current position. Border + drop-shadow so it reads against any
+     part of the gradient. */
+  .temp-slider-thumb {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--ink);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+  }
+
+  /* Color legend below the slider — three horizontal items showing what
+     each state color looks like. Helps the user decode the table at a
+     glance without having to remember which color is which. */
+  .temp-legend {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+
+  .temp-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    line-height: 1;
+  }
+
+  .temp-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+
+  .state-solid-swatch  { background: var(--state-solid); }
+  .state-liquid-swatch { background: var(--state-liquid); }
+  .state-gas-swatch    { background: var(--state-gas); }
+
+  /* =============================================================================
+     TILE RECOLOR when temperature mode is active
+     =============================================================================
+     Override the .element background with the state color. Keep the left
+     border at category color (it's only 4px wide) as a subtle reminder of
+     the element's chemical category — useful for cross-referencing without
+     the colors fighting for attention.
+     White text becomes the readable choice on these mid-tone backgrounds.
+     ----------------------------------------------------------------------------- */
+  body.temperature-mode .element.state-solid {
+    background: var(--state-solid);
+    color: white;
+  }
+  body.temperature-mode .element.state-liquid {
+    background: var(--state-liquid);
+    color: white;
+  }
+  body.temperature-mode .element.state-gas {
+    background: var(--state-gas);
+    color: white;
+  }
+
+  /* The tile's inner text uses --ink by default; in temperature mode all
+     children of state-* tiles inherit white. Keep the category color stripe
+     on the left border so the user retains category orientation. */
+  body.temperature-mode .element.state-solid .number,
+  body.temperature-mode .element.state-solid .name,
+  body.temperature-mode .element.state-solid .mass,
+  body.temperature-mode .element.state-liquid .number,
+  body.temperature-mode .element.state-liquid .name,
+  body.temperature-mode .element.state-liquid .mass,
+  body.temperature-mode .element.state-gas .number,
+  body.temperature-mode .element.state-gas .name,
+  body.temperature-mode .element.state-gas .mass {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
   /* Stardust origin chips — each gets a color matching its cosmic process */
   .gap-control[data-active-filter="stardust"] .stardust-chip {
     background: rgba(255, 255, 255, 0.08);
