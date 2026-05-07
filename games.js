@@ -538,12 +538,34 @@ document.addEventListener('DOMContentLoaded', () => {
       revealedNumbers: new Set() // atomic numbers currently revealed
     };
 
-    // Find the 3x3 neighborhood (up to 9 atomic numbers) centered on the
-    // given element. Returns an array of atomic numbers.
+    // Find the neighborhood centered on the given element. Returns an array
+    // of atomic numbers.
+    //
+    // Main-table cells get the standard 3x3 (up to 9 atoms, edge-trimmed).
+    //
+    // Lanthanide/actinide row cells get a sliding 3-col × 2-row window (3
+    // lanthanides + 3 actinides = always 6 atoms, even at row edges). The
+    // window is clamped to cols 3..17 (the 15 elements in each detached row),
+    // so hovering La gives La/Ce/Pr + Ac/Th/Pa, hovering Lu gives Tm/Yb/Lu
+    // + Md/No/Lr, and middle hovers center normally. No crossover into the
+    // main table — the detached rows only reveal each other.
     function neighborhood(centerNum) {
       const center = VISUAL_POS[centerNum];
       if (!center) return [];
       const result = [];
+      if (center.row === 9 || center.row === 10) {
+        // Lanthanide/actinide sliding window: 3 cols starting at startCol,
+        // clamped so the window stays within the populated col range [3..17].
+        const startCol = Math.max(3, Math.min(15, center.col - 1));
+        for (let c = startCol; c < startCol + 3; c++) {
+          const lanNum = POS_TO_NUM[`9,${c}`];
+          const actNum = POS_TO_NUM[`10,${c}`];
+          if (lanNum) result.push(lanNum);
+          if (actNum) result.push(actNum);
+        }
+        return result;
+      }
+      // Main table: standard 3x3.
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
           const num = POS_TO_NUM[`${center.row + dr},${center.col + dc}`];
@@ -592,8 +614,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const tableEl = document.getElementById('table');
-    if (tableEl) {
-      tableEl.addEventListener('mousemove', (e) => {
+    // Bind hover/click listeners on the .frame parent rather than #table.
+    // The lanthanide and actinide rows are inserted as siblings of #table
+    // (not children), so listeners on #table miss them entirely — that's
+    // why clicks on a lanthanide tile used to fall through to the modal
+    // opener instead of triggering a reveal.
+    const frameEl = tableEl ? tableEl.parentNode : null;
+    if (frameEl) {
+      frameEl.addEventListener('mousemove', (e) => {
         if (state.difficulty !== 'medium') return;
         const cell = e.target.closest('.element');
         if (!cell) {
@@ -603,8 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const num = parseInt(cell.dataset.number, 10);
         if (num) setPreview(num);
       });
-      // Clear preview when the cursor leaves the table entirely.
-      tableEl.addEventListener('mouseleave', clearPreview);
+      // Clear preview when the cursor leaves the frame entirely.
+      frameEl.addEventListener('mouseleave', clearPreview);
       // Also clear when the page is scrolled or window is blurred — the
       // preview shouldn't persist if the user is no longer focused on
       // the table.
@@ -612,16 +640,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===== REVEAL CLICK HANDLER =====
-    // Bound at table level via event delegation. In medium mode a click
-    // on an element tile triggers a reveal of the 3x3 window around that
-    // tile (decrementing the budget). This needs to FIRE BEFORE the
+    // Bound at frame level via event delegation. In medium mode a click
+    // on an element tile triggers a reveal of the surrounding window around
+    // that tile (decrementing the budget). This needs to FIRE BEFORE the
     // existing per-cell click handler that opens the modal — otherwise
     // clicking a tile to reveal would also open the modal.
     //
-    // Strategy: use the capture phase on the table, and stopPropagation()
-    // when we're handling the click for game purposes.
-    if (tableEl) {
-      tableEl.addEventListener('click', (e) => {
+    // Strategy: use the capture phase on .frame, and stopPropagation() when
+    // we're handling the click for game purposes. Bound on .frame (not
+    // #table) so clicks on the detached lanthanide/actinide row tiles also
+    // get caught — those rows are siblings of #table, not children.
+    if (frameEl) {
+      frameEl.addEventListener('click', (e) => {
         if (state.difficulty !== 'medium') return;
         const cell = e.target.closest('.element');
         if (!cell) return;
@@ -642,10 +672,11 @@ document.addEventListener('DOMContentLoaded', () => {
           setTimeout(() => cell.classList.remove('reveal-nope'), 300);
           return;
         }
-        // Reveal the 3x3 window. If any tiles in the window are already
-        // revealed that's fine — they stay revealed, no extra cost.
-        const window3x3 = neighborhood(num);
-        window3x3.forEach(n => state.revealedNumbers.add(n));
+        // Reveal the neighborhood (3x3 in the main table, 3-col x 2-row
+        // sliding window in the detached lanthanide/actinide rows). Tiles
+        // already revealed stay revealed — no extra cost.
+        const revealWindow = neighborhood(num);
+        revealWindow.forEach(n => state.revealedNumbers.add(n));
         state.revealsUsed += 1;
         updateRevealedClasses();
         updateRevealsExhaustedClass();
